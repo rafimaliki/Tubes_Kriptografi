@@ -1,0 +1,13 @@
+{
+  "watch": ["src"],
+  "ext": "ts,js,json",
+  "ignore": ["node_modules", "dist"],
+  "exec": "tsx src/index.ts",
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "legacyWatch": true,
+  "polling": true,
+  "verbose": false,
+  "delay": 1000
+}
