@@ -1,6 +1,8 @@
 import express, { Express } from "express";
 import dotenv from "dotenv";
-import healthRouter from "./routes/health";
+import apiRouter from "./routes/api.routes";
+import swaggerUi from "swagger-ui-express";
+import { openApiDocument } from "./openapi";
 
 dotenv.config();
 
@@ -10,11 +12,13 @@ const port = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use("/health", healthRouter);
+app.use("/api", apiRouter);
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiDocument));
 
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  console.log(`Server running on port 3001`);
   console.log(
     `To seed the database, run: docker-compose exec backend npm run db:seed`
   );
+  console.log(`Swagger docs available at http://localhost:3001/api-docs`);
 });
