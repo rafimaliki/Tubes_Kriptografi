@@ -29,12 +29,6 @@ export default function ChatSidebar({
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between mb-3">
           <h1 className="text-2xl font-bold text-gray-900">Cryptalk</h1>
-          <button
-            onClick={onLogout}
-            className="text-gray-500 hover:text-gray-700 text-sm font-semibold"
-          >
-            Logout
-          </button>
         </div>
       </div>
 
@@ -92,12 +86,18 @@ export default function ChatSidebar({
           <UserIcon username={currentUser.username} size={40} />
           <div className="flex-1 min-w-0">
             <p className="text-xs text-gray-500 uppercase tracking-wide">
-              Signed in as
+              Logged in as
             </p>
             <p className="font-semibold text-gray-900">
               {currentUser.username}
             </p>
           </div>
+          <button
+            onClick={onLogout}
+            className="text-gray-500 hover:text-gray-700 text-sm font-semibold"
+          >
+            Logout
+          </button>
         </div>
       </div>
 
