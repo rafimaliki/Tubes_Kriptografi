@@ -1,33 +1,78 @@
 import { Request, Response } from "express";
-import {
-  LoginRequestSchema,
-  RegisterRequestSchema,
-} from "@/schemas/auth.schema";
+import { AuthAPISchema } from "@/schemas/auth.schema";
+import { NonceStoreRepository } from "@/repository/nonce_store.repo";
+import { UserRepository } from "@/repository/app_user.repo";
+import { generateJwt } from "@/lib/jwt";
 
-export const loginHandler = async (req: Request, res: Response) => {
-  try {
-    const parsed = LoginRequestSchema.parse(req.body);
+export const AuthHandler = {
+  async challenge(req: Request, res: Response) {
+    try {
+      const parsed = AuthAPISchema.challenge.req.parse(req.body);
+      const { username } = parsed;
 
-    // auth logic
-    // butuh 2 handler (2x request) rupanya:
-    //    1. minta nonce dari server (butuh mekanisme untuk memastikan nonce unik per request, mencegah replay attack)
-    //    2. kirim signed nonce untuk verifikasi
+      const app_user = await UserRepository.getByUsername(username);
+      if (!app_user) {
+        return res.status(404).json({ error: "User not found" });
+      }
 
-    res.status(200).json({ message: "Login successful", token: "dummy-token" });
-  } catch (error) {
-    res.status(400).json({ error });
-  }
-};
+      const nonce_obj = await NonceStoreRepository.generate(username);
 
-export const registerHandler = async (req: Request, res: Response) => {
-  try {
-    const parsed = RegisterRequestSchema.parse(req.body);
+      res.status(200).json({ nonce_id: nonce_obj.id, nonce: nonce_obj.nonce });
+    } catch (error) {
+      res.status(400).json({ error });
+    }
+  },
 
-    // registration logic
-    // simple, tinggal cek username ada/tidak, lalu simpan public keynya
+  async login(req: Request, res: Response) {
+    try {
+      const parsed = AuthAPISchema.login.req.parse(req.body);
+      const { username, nonce_id, signed_nonce } = parsed;
 
-    res.status(200).json({ message: "Registration successful" });
-  } catch (error) {
-    res.status(400).json({ error });
-  }
+      const app_user = await UserRepository.getByUsername(username);
+      if (!app_user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const stored_nonce = await NonceStoreRepository.get(username, nonce_id);
+      if (!stored_nonce) {
+        return res.status(400).json({ error: "Invalid nonce ID or username" });
+      }
+
+      const verified = true; // verifySignature(username, stored_nonce, signed_nonce);
+      if (!verified) {
+        return res.status(401).json({ error: "Invalid signature" });
+      }
+
+      const jwt_payload = {
+        user_id: app_user.id,
+        username: app_user.username,
+        user_public_key: app_user.public_key,
+      };
+
+      const token = generateJwt(jwt_payload);
+
+      await NonceStoreRepository.deleteForUsername(username);
+
+      res.status(200).json({ message: "Login successful", token: token });
+    } catch (error) {
+      res.status(400).json({ error });
+    }
+  },
+
+  async register(req: Request, res: Response) {
+    try {
+      const parsed = AuthAPISchema.register.req.parse(req.body);
+
+      const existing_user = await UserRepository.getByUsername(parsed.username);
+      if (existing_user) {
+        return res.status(400).json({ error: "Username already exists" });
+      }
+
+      await UserRepository.create(parsed.username, parsed.public_key);
+
+      res.status(200).json({ message: "Registration successful" });
+    } catch (error) {
+      res.status(400).json({ error });
+    }
+  },
 };

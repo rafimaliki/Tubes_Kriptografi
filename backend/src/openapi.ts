@@ -3,17 +3,12 @@ import {
   OpenApiGeneratorV3,
 } from "@asteasolutions/zod-to-openapi";
 
-import { HealthResponseSchema } from "@/schemas/health.schema";
-import {
-  LoginRequestSchema,
-  LoginResponseSchema,
-  RegisterRequestSchema,
-  RegisterResponseSchema,
-} from "@/schemas/auth.schema";
+import { HealthAPISchema } from "@/schemas/health.schema";
+import { AuthAPISchema } from "@/schemas/auth.schema";
 
 const registry = new OpenAPIRegistry();
 
-registry.register("HealthResponse", HealthResponseSchema);
+registry.register("HealthResponse", HealthAPISchema.check.req);
 registry.registerPath({
   method: "get",
   path: "/health",
@@ -29,13 +24,64 @@ registry.registerPath({
             $ref: "#/components/schemas/HealthResponse",
           },
         },
+        "application/x-www-form-urlencoded": {
+          schema: {
+            $ref: "#/components/schemas/HealthResponse",
+          },
+        },
       },
     },
   },
 });
 
-registry.register("LoginRequest", LoginRequestSchema);
-registry.register("LoginResponse", LoginResponseSchema);
+registry.register("ChallengeRequest", AuthAPISchema.challenge.req);
+registry.register("ChallengeResponse", AuthAPISchema.challenge.res);
+registry.registerPath({
+  method: "post",
+  path: "/auth/challenge",
+  summary: "Request login challenge",
+  description: "Generate a nonce for user login challenge",
+  tags: ["Authentication"],
+  requestBody: {
+    description: "Challenge request payload",
+    required: true,
+    content: {
+      "application/json": {
+        schema: {
+          $ref: "#/components/schemas/ChallengeRequest",
+        },
+      },
+      "application/x-www-form-urlencoded": {
+        schema: {
+          $ref: "#/components/schemas/ChallengeRequest",
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Challenge generated successfully",
+      content: {
+        "application/json": {
+          schema: {
+            $ref: "#/components/schemas/ChallengeResponse",
+          },
+        },
+        "application/x-www-form-urlencoded": {
+          schema: {
+            $ref: "#/components/schemas/ChallengeResponse",
+          },
+        },
+      },
+    },
+    400: {
+      description: "Invalid request",
+    },
+  },
+});
+
+registry.register("LoginRequest", AuthAPISchema.login.req);
+registry.register("LoginResponse", AuthAPISchema.login.res);
 registry.registerPath({
   method: "post",
   path: "/auth/login",
@@ -51,6 +97,11 @@ registry.registerPath({
           $ref: "#/components/schemas/LoginRequest",
         },
       },
+      "application/x-www-form-urlencoded": {
+        schema: {
+          $ref: "#/components/schemas/LoginRequest",
+        },
+      },
     },
   },
   responses: {
@@ -58,6 +109,11 @@ registry.registerPath({
       description: "Login successful",
       content: {
         "application/json": {
+          schema: {
+            $ref: "#/components/schemas/LoginResponse",
+          },
+        },
+        "application/x-www-form-urlencoded": {
           schema: {
             $ref: "#/components/schemas/LoginResponse",
           },
@@ -70,8 +126,8 @@ registry.registerPath({
   },
 });
 
-registry.register("RegisterRequest", RegisterRequestSchema);
-registry.register("RegisterResponse", RegisterResponseSchema);
+registry.register("RegisterRequest", AuthAPISchema.register.req);
+registry.register("RegisterResponse", AuthAPISchema.register.res);
 registry.registerPath({
   method: "post",
   path: "/auth/register",
@@ -83,6 +139,11 @@ registry.registerPath({
     required: true,
     content: {
       "application/json": {
+        schema: {
+          $ref: "#/components/schemas/RegisterRequest",
+        },
+      },
+      "application/x-www-form-urlencoded": {
         schema: {
           $ref: "#/components/schemas/RegisterRequest",
         },
