@@ -10,7 +10,6 @@ async function seedUsers() {
   const users = Array.from({ length: num_users }, (_, i) => {
     const random_key = crypto.randomBytes(32).toString("hex");
     return {
-      id: i + 1,
       username: `user${i + 1}`,
       public_key: random_key,
     };

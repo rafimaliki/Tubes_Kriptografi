@@ -1,33 +1,28 @@
 import { create } from "zustand";
+import { AuthAPI } from "@/api/auth.api";
+import type {
+  ChallengeApiResult,
+  LoginApiResult,
+  RegisterApiResult,
+} from "@/types/ApiResult";
 
 export interface User {
   id: string;
   username: string;
-  password: string;
+  jwt_token: string;
 }
 
 interface AuthStore {
   currentUser: User | null;
-  users: User[];
-  login: (username: string, password: string) => boolean;
-  register: (username: string, password: string) => boolean;
+  login: (
+    username: string,
+    password: string
+  ) => Promise<ChallengeApiResult | LoginApiResult>;
+  register: (username: string, password: string) => Promise<RegisterApiResult>;
   logout: () => void;
 }
 
 const LOCAL_STORAGE_KEY = "app_user";
-
-const MOCK_USERS: User[] = [
-  { id: "1", username: "alice", password: "password123" },
-  { id: "2", username: "bob", password: "password123" },
-  { id: "3", username: "charlie", password: "password123" },
-  { id: "4", username: "david", password: "password123" },
-  { id: "5", username: "eva", password: "password123" },
-  { id: "6", username: "frank", password: "password123" },
-  { id: "7", username: "grace", password: "password123" },
-  { id: "8", username: "henry", password: "password123" },
-  { id: "9", username: "iris", password: "password123" },
-  { id: "10", username: "jack", password: "password123" },
-];
 
 const encodeBase64 = (data: string): string => {
   return btoa(data);
@@ -62,32 +57,77 @@ const saveToLocalStorage = (user: User | null) => {
 export const useAuthStore = create<AuthStore>((set) => ({
   currentUser: loadFromLocalStorage(),
 
-  users: MOCK_USERS,
+  login: async (username: string, password: string) => {
+    try {
+      // 1) generate key pair dulu
 
-  login: (username: string, password: string) => {
-    const user = MOCK_USERS.find(
-      (u) => u.username === username && u.password === password
-    );
-    if (user) {
+      // 2) request challenge nonce
+      const challenge_res = await AuthAPI.challenge(username);
+
+      if (!challenge_res.ok) {
+        return challenge_res;
+      }
+
+      const { nonce_id, nonce } = challenge_res.data;
+
+      // 3) sign nonce
+      /** TO DO (pindahin ke file lain jangan disini) */
+      const signNonceWithPassword = async (pw: string, n: string) => {
+        return btoa(`${n}:${pw}`);
+      };
+
+      const signed_nonce = await signNonceWithPassword(password, nonce);
+
+      // 4) kirim login request dengan signed nonce
+      const login_res = await AuthAPI.login(username, nonce_id, signed_nonce);
+
+      if (!login_res.ok) {
+        return login_res;
+      }
+
+      // 5) parse JWT token dari response
+      const { jwt_token } = login_res.data;
+      const payload = JSON.parse(decodeBase64(jwt_token.split(".")[1]));
+
+      const user = {
+        id: String(payload.user_id),
+        username: String(payload.username),
+        jwt_token: jwt_token,
+      };
+
+      // 6) save user di store + localStorage
       set({ currentUser: user });
       saveToLocalStorage(user);
-      return true;
+
+      return login_res;
+    } catch (err) {
+      return { ok: false, error: "Unexpected error during login" };
     }
-    return false;
   },
 
-  register: (username: string, password: string) => {
-    const existingUser = MOCK_USERS.find((u) => u.username === username);
-    if (existingUser) {
-      return false;
+  register: async (username: string, password: string) => {
+    try {
+      // generate public/private key pair
+      /** TO DO (pindahin ke file lain jangan disini) */
+      const generateKeyPairWithPassword = async (pw: string) => {
+        return {
+          public_key: btoa(`public-key-for-${pw}`),
+          private_key: btoa(`private-key-for-${pw}`),
+        };
+      };
+
+      // 1) generate key pair
+      const { public_key, private_key } =
+        await generateKeyPairWithPassword(password);
+
+      // 2) kirim request register ke backend
+      const register_res = await AuthAPI.register(username, public_key);
+
+      return register_res;
+    } catch (err) {
+      console.error("Key generation error:", err);
+      return { ok: false, error: "Unexpected error during registration" };
     }
-    const newUser: User = {
-      id: String(MOCK_USERS.length + 1),
-      username,
-      password,
-    };
-    MOCK_USERS.push(newUser);
-    return true;
   },
 
   logout: () => {

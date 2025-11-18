@@ -17,15 +17,16 @@ function RegisterPage() {
 
   const navigate = useNavigate();
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username || !password) {
       setError("Username and password are required");
       return;
     }
-    const result = register(username, password);
-    if (!result) {
-      setError("Username already exists");
+    const result = await register(username, password);
+
+    if (!result.ok) {
+      setError(result.error || "Registration failed");
     } else {
       setSuccess(true);
       setError("");

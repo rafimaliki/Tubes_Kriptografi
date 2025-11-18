@@ -11,15 +11,16 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const { login } = useAuthStore();
   const navigate = useNavigate();
-  const [username, setUsername] = useState("alice");
-  const [password, setPassword] = useState("password123");
+  const [username, setUsername] = useState("user1");
+  const [password, setPassword] = useState("password1");
   const [error, setError] = useState("");
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = login(username, password);
-    if (!success) {
-      setError("Invalid username or password");
+    const result = await login(username, password);
+
+    if (!result.ok) {
+      setError(result.error || "Login failed");
     } else {
       navigate({
         to: "/chat",

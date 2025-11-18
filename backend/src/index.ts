@@ -1,16 +1,26 @@
-import express, { Express } from "express";
+import express from "express";
+import cors from "cors";
 import dotenv from "dotenv";
 import apiRouter from "./routes/api.routes";
 import swaggerUi from "swagger-ui-express";
 import { openApiDocument } from "./openapi";
+import { requestLogger } from "./middlewares/log.middleware";
 
 dotenv.config();
 
-const app: Express = express();
+const app = express();
 const port = process.env.PORT || 3000;
+
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+  })
+);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use(requestLogger);
 
 app.use("/api", apiRouter);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiDocument));

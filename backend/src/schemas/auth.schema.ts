@@ -55,7 +55,7 @@ export const AuthAPISchema = {
           description: "Response message",
           example: "Login successful",
         }),
-        token: z.string().openapi({
+        jwt_token: z.string().openapi({
           description: "JWT authentication token",
           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
         }),
