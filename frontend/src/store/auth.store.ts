@@ -5,6 +5,8 @@ import type {
   LoginApiResult,
   RegisterApiResult,
 } from "@/types/ApiResult";
+import { Base64 } from "@/lib/Base64";
+import { LocalStorage } from "@/lib/LocalStorage";
 
 export interface User {
   id: string;
@@ -24,38 +26,8 @@ interface AuthStore {
 
 const LOCAL_STORAGE_KEY = "app_user";
 
-const encodeBase64 = (data: string): string => {
-  return btoa(data);
-};
-
-const decodeBase64 = (data: string): string => {
-  return atob(data);
-};
-
-const loadFromLocalStorage = (): User | null => {
-  const data = localStorage.getItem(LOCAL_STORAGE_KEY);
-  if (data) {
-    try {
-      const decodedData = decodeBase64(data);
-      return JSON.parse(decodedData);
-    } catch {
-      console.error("Failed to parse or decode localStorage data");
-    }
-  }
-  return null;
-};
-
-const saveToLocalStorage = (user: User | null) => {
-  if (user) {
-    const encodedData = encodeBase64(JSON.stringify(user));
-    localStorage.setItem(LOCAL_STORAGE_KEY, encodedData);
-  } else {
-    localStorage.removeItem(LOCAL_STORAGE_KEY);
-  }
-};
-
 export const useAuthStore = create<AuthStore>((set) => ({
-  currentUser: loadFromLocalStorage(),
+  currentUser: LocalStorage.load(LOCAL_STORAGE_KEY) as User | null,
 
   login: async (username: string, password: string) => {
     try {
@@ -87,7 +59,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
       // 5) parse JWT token dari response
       const { jwt_token } = login_res.data;
-      const payload = JSON.parse(decodeBase64(jwt_token.split(".")[1]));
+      const payload = JSON.parse(Base64.decode(jwt_token.split(".")[1]));
 
       const user = {
         id: String(payload.user_id),
@@ -97,7 +69,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
       // 6) save user di store + localStorage
       set({ currentUser: user });
-      saveToLocalStorage(user);
+      LocalStorage.save(LOCAL_STORAGE_KEY, user);
 
       return login_res;
     } catch (err) {
@@ -107,7 +79,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
   register: async (username: string, password: string) => {
     try {
-      // generate public/private key pair
+      // fungsi public/private key pair
       /** TO DO (pindahin ke file lain jangan disini) */
       const generateKeyPairWithPassword = async (pw: string) => {
         return {
@@ -132,6 +104,6 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
   logout: () => {
     set({ currentUser: null });
-    saveToLocalStorage(null);
+    LocalStorage.save(LOCAL_STORAGE_KEY, null);
   },
 }));
