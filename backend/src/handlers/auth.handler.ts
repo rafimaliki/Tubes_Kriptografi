@@ -38,6 +38,8 @@ export const AuthHandler = {
         return res.status(401).json({ error: "Invalid username or password" });
       }
 
+      // perlu cek timestamp nonce juga
+
       const verified = true; // verifySignature(username, stored_nonce, signed_nonce);
       if (!verified) {
         return res.status(401).json({ error: "Invalid username or password" });

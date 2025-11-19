@@ -1,5 +1,5 @@
 import { db } from "@/repo/db";
-import { app_user } from "@/repo/schema";
+import { app_user, chat } from "@/repo/schema";
 import dotenv from "dotenv";
 import crypto from "crypto";
 dotenv.config();
@@ -19,10 +19,33 @@ async function seedUsers() {
   console.log(`[db-script]Seeded ${num_users} users`);
 }
 
+async function seedChats() {
+  const all_users = await db.select().from(app_user);
+
+  const chats = [];
+  for (let i = 0; i < all_users.length; i++) {
+    for (let j = 0; j < all_users.length; j++) {
+      if (i !== j) {
+        const message = `Hello from ${all_users[i].username} to ${all_users[j].username}`;
+        const timestamp = new Date().toISOString();
+        chats.push({
+          from_user_id: all_users[i].id,
+          to_user_id: all_users[j].id,
+          message,
+          timestamp,
+        });
+      }
+    }
+  }
+  await db.insert(chat).values(chats).onConflictDoNothing();
+  console.log(`[db-script]Seeded ${chats.length} chat messages`);
+}
+
 async function main() {
   try {
     console.log("[db-script] Starting database seeding...");
     await seedUsers();
+    await seedChats();
     console.log("[db-script] Database seeding completed successfully!");
     process.exit(0);
   } catch (error) {

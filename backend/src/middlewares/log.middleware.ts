@@ -11,6 +11,8 @@ export function requestLogger(req: Request, res: Response, next: NextFunction) {
 [${now}] ${req.method} ${req.originalUrl}
 - Status: ${res.statusCode}
 - IP: ${req.ip}
+- Authorization: ${req.headers.authorization || "None"}
+- User-Id: ${(req as any).user ? (req as any).user.user_id : "None"}
 - Query: ${JSON.stringify(req.query)}
 - Params: ${JSON.stringify(req.params)}
 - Body: ${JSON.stringify(req.body)}

@@ -12,3 +12,11 @@ export const nonce_store = pgTable("nonce_store", {
   nonce: varchar("nonce", { length: 64 }).notNull(),
   created_at: varchar("created_at", { length: 32 }).notNull(),
 });
+
+export const chat = pgTable("chat", {
+  id: serial("id").primaryKey().notNull(),
+  from_user_id: serial("from_user_id").notNull(),
+  to_user_id: serial("to_user_id").notNull(),
+  message: varchar("message", { length: 1024 }).notNull(),
+  timestamp: varchar("timestamp", { length: 32 }).notNull(),
+});

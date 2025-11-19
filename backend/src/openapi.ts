@@ -5,8 +5,16 @@ import {
 
 import { HealthAPISchema } from "@/schemas/health.schema";
 import { AuthAPISchema } from "@/schemas/auth.schema";
+import { ChatAPISchema } from "@/schemas/chat.schema";
 
 const registry = new OpenAPIRegistry();
+
+registry.registerComponent("securitySchemes", "BearerAuth", {
+  type: "http",
+  scheme: "bearer",
+  bearerFormat: "JWT",
+  description: "JWT Bearer Token Authentication",
+});
 
 registry.register("HealthResponse", HealthAPISchema.check.req);
 registry.registerPath({
@@ -163,6 +171,42 @@ registry.registerPath({
     },
     400: {
       description: "Invalid request",
+    },
+  },
+});
+
+registry.register("GetChatMessagesRequest", ChatAPISchema.get.req);
+registry.register("GetChatMessagesResponse", ChatAPISchema.get.res);
+registry.registerPath({
+  method: "get",
+  path: "/chat",
+  summary: "Get chat messages between users",
+  description: "Retrieve chat messages exchanged between two users",
+  tags: ["Chat"],
+  security: [{ BearerAuth: [] }],
+  parameters: [
+    ...(Object.keys(ChatAPISchema.get.req.shape).map((key) => ({
+      name: key,
+      in: "query",
+      required: true,
+    })) as any),
+  ],
+  responses: {
+    200: {
+      description: "Chat messages retrieved successfully",
+      content: {
+        "application/json": {
+          schema: {
+            $ref: "#/components/schemas/GetChatMessagesResponse",
+          },
+        },
+      },
+    },
+    400: {
+      description: "Invalid request",
+    },
+    401: {
+      description: "Unauthorized - Invalid or missing Bearer token",
     },
   },
 });
