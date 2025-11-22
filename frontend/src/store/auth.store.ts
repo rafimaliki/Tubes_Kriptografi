@@ -9,9 +9,10 @@ import { Base64 } from "@/lib/Base64";
 import { LocalStorage } from "@/lib/LocalStorage";
 
 export interface User {
-  id: string;
+  id: number;
   username: string;
-  jwt_token: string;
+  public_key: string;
+  jwt_token?: string;
 }
 
 interface AuthStore {
@@ -62,8 +63,9 @@ export const useAuthStore = create<AuthStore>((set) => ({
       const payload = JSON.parse(Base64.decode(jwt_token.split(".")[1]));
 
       const user = {
-        id: String(payload.user_id),
+        id: Number(payload.id),
         username: String(payload.username),
+        public_key: String(payload.public_key),
         jwt_token: jwt_token,
       };
 

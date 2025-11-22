@@ -1,7 +1,12 @@
 import { db } from "@/repo/db";
-import { app_user, chat } from "@/repo/schema";
+import { app_user, chat, chat_room } from "@/repo/schema";
 import dotenv from "dotenv";
 import crypto from "crypto";
+import { create } from "domain";
+import { createBrotliCompress } from "zlib";
+import { ChatRoomRepository } from "@/repository/chat_room.repo";
+import { time } from "console";
+import { timestamp } from "drizzle-orm/mysql-core";
 dotenv.config();
 
 async function seedUsers() {
@@ -22,23 +27,64 @@ async function seedUsers() {
 async function seedChats() {
   const all_users = await db.select().from(app_user);
 
+  const sentences = [
+    "Hey! How's your day going?",
+    "What's up?",
+    "Did you finish the project?",
+    "Let's meet later.",
+    "I found something interesting today!",
+    "Can you check your messages?",
+    "I will get back to you soon.",
+    "Don't forget our plan tomorrow.",
+    "Can you help me with something?",
+    "This app is getting cooler!",
+    "Do you want to play a game later?",
+    "Have you eaten?",
+    "I'm busy right now, talk later.",
+    "Nice work on that task!",
+    "Good morning!",
+    "Good night!",
+    "I learned something new today!",
+  ];
+
+  const MESSAGE_COUNT = 10;
   const chats = [];
+
+  const now = new Date();
+  const startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
   for (let i = 0; i < all_users.length; i++) {
     for (let j = 0; j < all_users.length; j++) {
-      if (i !== j) {
-        const message = `Hello from ${all_users[i].username} to ${all_users[j].username}`;
-        const timestamp = new Date().toISOString();
+      if (i === j) continue;
+      if (i > 5 || j > 5) continue;
+
+      const from = all_users[i];
+      const to = all_users[j];
+
+      for (let k = 0; k < MESSAGE_COUNT; k++) {
+        const randomSentence =
+          sentences[Math.floor(Math.random() * sentences.length)];
+
+        const room_id = await ChatRoomRepository.getOrCreate(from.id, to.id);
+
+        const randomTime = new Date(
+          startTime.getTime() +
+            Math.random() * (now.getTime() - startTime.getTime())
+        );
+
         chats.push({
-          from_user_id: all_users[i].id,
-          to_user_id: all_users[j].id,
-          message,
-          timestamp,
+          from_user_id: from.id,
+          to_user_id: to.id,
+          room_id: room_id,
+          message: randomSentence,
+          created_at: randomTime,
         });
       }
     }
   }
+
   await db.insert(chat).values(chats).onConflictDoNothing();
-  console.log(`[db-script]Seeded ${chats.length} chat messages`);
+  console.log(`[db-script] Seeded ${chats.length} varied chat messages`);
 }
 
 async function main() {

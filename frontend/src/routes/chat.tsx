@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/auth.store";
 import { useChatStore } from "@/store/chat.store";
 
@@ -13,23 +13,24 @@ export const Route = createFileRoute("/chat")({
 
 function ChatPage() {
   const { currentUser, logout } = useAuthStore();
-  const { getChatsForUser } = useChatStore();
-  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  if (!currentUser) return null;
 
   const navigate = useNavigate();
-  const handleLogout = () => {
-    logout();
-    navigate({
-      to: "/login",
-    });
-  };
+  const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
+  const { chats, loadChat, connect, disconnect } = useChatStore();
 
-  if (!currentUser) {
-    return null;
-  }
+  useEffect(() => {
+    connect(currentUser);
+    return () => {
+      disconnect();
+    };
+  }, [currentUser]);
 
-  const userChats = getChatsForUser(currentUser.username);
-  const selectedChat = userChats.find((chat) => chat.id === selectedChatId);
+  useEffect(() => {
+    if (selectedChatId) {
+      loadChat(selectedChatId);
+    }
+  }, [selectedChatId]);
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -37,12 +38,19 @@ function ChatPage() {
       <ChatSidebar
         selectedChatId={selectedChatId}
         onSelectChat={setSelectedChatId}
-        onLogout={handleLogout}
+        onLogout={() => {
+          logout();
+          navigate({
+            to: "/login",
+          });
+        }}
       />
 
       {/* Chatroom */}
-      {selectedChat ? (
-        <ChatRoom chat={selectedChat} />
+      {selectedChatId ? (
+        <ChatRoom
+          chat={chats.find((chat) => chat.room_id === selectedChatId)!}
+        />
       ) : (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">

@@ -6,14 +6,12 @@ import crypto from "crypto";
 export const NonceStoreRepository = {
   async generate(username: string) {
     const nonce = crypto.randomBytes(32).toString("hex");
-    const created_at = new Date().toISOString();
     try {
       const [row] = await db
         .insert(nonce_store)
         .values({
           username,
           nonce,
-          created_at,
         })
         .returning({ id: nonce_store.id, nonce: nonce_store.nonce });
       const value = { id: row.id, nonce: row.nonce };

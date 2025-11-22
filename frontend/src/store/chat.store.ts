@@ -1,207 +1,310 @@
 import { create } from "zustand";
+import { io, Socket } from "socket.io-client";
+import type { User } from "./auth.store";
+import { UserAPI } from "@/api/user.api";
+import { ChatAPI } from "@/api/chat.api";
 
-export interface Message {
-  id: string;
-  senderId: string;
-  senderUsername: string;
-  text: string;
-  timestamp: number;
-}
+const SOCKET_URL = "http://localhost:3001";
 
-export interface Chat {
-  id: string;
-  participants: string[];
-  messages: Message[];
-  lastMessage?: Message;
-}
-
-interface ChatStore {
-  chats: Chat[];
-  getChatsForUser: (username: string) => Chat[];
-  getChatBetweenUsers: (user1: string, user2: string) => Chat | undefined;
-  getOrCreateChat: (currentUsername: string, otherUsername: string) => Chat;
-  addMessage: (
-    chatId: string,
-    senderId: string,
-    senderUsername: string,
-    text: string
+export interface ClientToServerEvents {
+  new_message: (
+    payload: Omit<Message, "id" | "created_at">,
+    callback: (response: { chat: Message }) => void
+  ) => void;
+  create_chat_room: (
+    payload: {
+      user1_id: number;
+      user2_id: number;
+    },
+    callback: (response: { room_id: number }) => void
   ) => void;
 }
 
-const MOCK_CHATS: Chat[] = [
-  {
-    id: "1",
-    participants: ["alice", "bob"],
-    messages: [
-      {
-        id: "1",
-        senderId: "1",
-        senderUsername: "alice",
-        text: "Hey Bob! How are you?",
-        timestamp: Date.now() - 3600000,
-      },
-      {
-        id: "2",
-        senderId: "2",
-        senderUsername: "bob",
-        text: "Hi Alice! I am doing great, thanks for asking!",
-        timestamp: Date.now() - 3500000,
-      },
-      {
-        id: "3",
-        senderId: "1",
-        senderUsername: "alice",
-        text: "Want to grab coffee later?",
-        timestamp: Date.now() - 3400000,
-      },
-    ],
-  },
-  {
-    id: "2",
-    participants: ["alice", "charlie"],
-    messages: [
-      {
-        id: "1",
-        senderId: "3",
-        senderUsername: "charlie",
-        text: "Alice! Did you see the new project?",
-        timestamp: Date.now() - 7200000,
-      },
-      {
-        id: "2",
-        senderId: "1",
-        senderUsername: "alice",
-        text: "Not yet, what is it about?",
-        timestamp: Date.now() - 7100000,
-      },
-      {
-        id: "3",
-        senderId: "3",
-        senderUsername: "charlie",
-        text: "It looks really interesting!",
-        timestamp: Date.now() - 7000000,
-      },
-    ],
-  },
-  {
-    id: "3",
-    participants: ["alice", "david"],
-    messages: [
-      {
-        id: "1",
-        senderId: "1",
-        senderUsername: "alice",
-        text: "David, nice to meet you!",
-        timestamp: Date.now() - 10800000,
-      },
-      {
-        id: "2",
-        senderId: "4",
-        senderUsername: "david",
-        text: "Hey Alice! Great to connect!",
-        timestamp: Date.now() - 10700000,
-      },
-    ],
-  },
-  {
-    id: "4",
-    participants: ["bob", "eva"],
-    messages: [
-      {
-        id: "1",
-        senderId: "2",
-        senderUsername: "bob",
-        text: "Eva! Long time no see!",
-        timestamp: Date.now() - 5400000,
-      },
-      {
-        id: "2",
-        senderId: "5",
-        senderUsername: "eva",
-        text: "Bob! I know, it has been forever!",
-        timestamp: Date.now() - 5300000,
-      },
-      {
-        id: "3",
-        senderId: "2",
-        senderUsername: "bob",
-        text: "We should catch up soon",
-        timestamp: Date.now() - 5200000,
-      },
-    ],
-  },
-  {
-    id: "5",
-    participants: ["charlie", "frank"],
-    messages: [
-      {
-        id: "1",
-        senderId: "6",
-        senderUsername: "frank",
-        text: "Charlie, what are you up to?",
-        timestamp: Date.now() - 2700000,
-      },
-      {
-        id: "2",
-        senderId: "3",
-        senderUsername: "charlie",
-        text: "Just working on some new ideas!",
-        timestamp: Date.now() - 2600000,
-      },
-    ],
-  },
-];
+export interface ServerToClientEvents {
+  connected: (payload: { socketId: string }) => void;
+  new_message: (payload: { chat: Message }) => void;
+}
 
-export const useChatStore = create<ChatStore>((set, get) => ({
-  chats: MOCK_CHATS,
-  getChatsForUser: (username: string) => {
-    return get().chats.filter((chat) => chat.participants.includes(username));
+export interface Message {
+  id: number;
+  from_user_id: number;
+  to_user_id: number;
+  room_id: number;
+  message: string;
+  created_at: string;
+}
+
+export interface Chat {
+  room_id: number;
+  participants: User[];
+  messages: Message[];
+  last_message?: Message;
+  loaded?: boolean;
+}
+
+export type ClientSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
+
+type State = {
+  // socket instance
+  socket: ClientSocket | null;
+  connected: boolean;
+  socketId?: string;
+  connect: (currentUser: User) => void;
+  disconnect: () => void;
+
+  // socket event dari client
+  sendMessage: (room_id: number, message: string) => void;
+  createChatRoom: (user1: User, user2: User) => Promise<Chat>;
+
+  // data chat
+  currentUser: User | null;
+  chats: Chat[];
+  getChats: () => Promise<Chat[]>;
+  getOrCreateChatWith: (otherUsername: string) => Promise<Chat>;
+  loadChat: (room_id: number) => Promise<void>;
+};
+
+export const useChatStore = create<State>((set, get) => ({
+  socket: null,
+  connected: false,
+  socketId: undefined,
+  currentUser: null,
+
+  connect: (currentUser: User) => {
+    const state = get();
+    if (state.socket) {
+      if (!state.connected) state.socket.connect();
+      return;
+    }
+
+    set(() => ({ currentUser }));
+
+    const socket: ClientSocket = io(SOCKET_URL, {
+      autoConnect: false,
+      auth: {
+        token: currentUser.jwt_token || "",
+      },
+    }) as ClientSocket;
+
+    // load recent chats
+    get().getChats();
+
+    // setup koneksi
+    socket.on("connect", () => {
+      set(() => ({ connected: true, socketId: socket.id }));
+    });
+
+    socket.on("disconnect", () => {
+      set(() => ({ connected: false, socketId: undefined }));
+    });
+
+    socket.on("connected", (payload) => {
+      set(() => ({ socketId: payload.socketId }));
+    });
+
+    // event handler dari server
+    socket.on("new_message", (payload) => {
+      console.log("new_message dari server:", payload);
+      const newMessage: Message = payload.chat as Message;
+
+      set((state) => {
+        let updatedChat: Chat | null = null;
+
+        const remainingChats = state.chats.filter((c) => {
+          if (c.room_id === newMessage.room_id) {
+            updatedChat = {
+              ...c,
+              messages: [...c.messages, newMessage],
+              last_message: newMessage,
+            };
+            return false;
+          }
+          return true;
+        });
+
+        return {
+          chats: updatedChat ? [updatedChat, ...remainingChats] : state.chats,
+        };
+      });
+    });
+
+    set(() => ({ socket }));
+    socket.connect();
   },
-  getChatBetweenUsers: (user1: string, user2: string) => {
-    return get().chats.find(
+
+  disconnect: () => {
+    const s = get();
+    if (s.socket) {
+      s.socket.disconnect();
+      set(() => ({ socket: null, connected: false, socketId: undefined }));
+    }
+  },
+
+  sendMessage: (room_id: number, message: string) => {
+    const s = get();
+    if (!s.socket || !s.connected) {
+      console.error("Socket not connected. Cannot send message.");
+      return;
+    }
+
+    const from_user_id = s.currentUser?.id;
+    const to_user_id = get()
+      .chats.find((chat) => chat.room_id === room_id)
+      ?.participants.find((p) => p.id !== from_user_id)?.id;
+
+    if (!from_user_id || !to_user_id) {
+      console.error("Cannot send message: invalid user IDs");
+      return;
+    }
+
+    const chat = {
+      room_id,
+      from_user_id,
+      to_user_id,
+      message,
+    };
+
+    s.socket.emit("new_message", chat, (response) => {
+      console.log("Response dari server untuk new_message:", response);
+
+      const newMessage: Message = response.chat as Message;
+
+      set((state) => {
+        let updatedChat: Chat | null = null;
+
+        const remainingChats = state.chats.filter((c) => {
+          if (c.room_id === room_id) {
+            updatedChat = {
+              ...c,
+              messages: [...c.messages, newMessage],
+              last_message: newMessage,
+            };
+            return false;
+          }
+          return true;
+        });
+
+        return {
+          chats: updatedChat ? [updatedChat, ...remainingChats] : state.chats,
+        };
+      });
+    });
+  },
+
+  createChatRoom: (user1: User, user2: User) => {
+    const s = get();
+    if (!s.socket || !s.connected) {
+      console.error("Socket not connected. Cannot request room ID.");
+      return Promise.reject(new Error("Socket not connected"));
+    }
+
+    return new Promise<Chat>((resolve, reject) => {
+      s.socket!.emit(
+        "create_chat_room",
+        { user1_id: user1.id, user2_id: user2.id },
+        (result: { room_id: number } | { error: string }) => {
+          if ("error" in result) {
+            console.error("Failed to create chat:", result.error);
+            reject(new Error(result.error));
+            return;
+          }
+
+          const newChat: Chat = {
+            room_id: result.room_id,
+            participants: [user1, user2],
+            messages: [],
+          };
+
+          set((state) => ({
+            chats: [...state.chats, newChat],
+          }));
+
+          resolve(newChat);
+        }
+      );
+    });
+  },
+
+  chats: [],
+
+  getChats: async () => {
+    const res = await ChatAPI.getRecents();
+    if (res.ok) {
+      const normalizedChats = res.data.map((chat) => {
+        return {
+          room_id: chat.room_id,
+          participants: chat.participants,
+          messages: [chat.last_message],
+          last_message: chat.last_message,
+          loaded: false,
+        };
+      });
+
+      console.log("recent_chat_list:", normalizedChats);
+
+      set(() => ({ chats: normalizedChats }));
+    } else {
+      console.error("Failed to fetch chats:", res.error);
+    }
+    return get().chats;
+  },
+
+  getOrCreateChatWith: async (otherUsername: string) => {
+    const currentUser = get().currentUser;
+
+    if (!currentUser) {
+      throw new Error("No current user logged in");
+    }
+
+    let chat = get().chats.find(
       (chat) =>
-        chat.participants.includes(user1) && chat.participants.includes(user2)
+        chat.participants.some((p) => p.username === currentUser?.username) &&
+        chat.participants.some((p) => p.username === otherUsername)
     );
-  },
-  getOrCreateChat: (currentUsername: string, otherUsername: string) => {
-    let chat = get().getChatBetweenUsers(currentUsername, otherUsername);
     if (!chat) {
-      const newChat: Chat = {
-        id: String(Date.now()),
-        participants: [currentUsername, otherUsername],
-        messages: [],
-      };
-      set((state) => ({
-        chats: [...state.chats, newChat],
-      }));
+      const otherUser = await UserAPI.get(otherUsername);
+      if (!otherUser.ok) {
+        throw new Error("User not found");
+      }
+
+      const newChat = await get().createChatRoom(currentUser, otherUser.data);
       chat = newChat;
     }
     return chat;
   },
-  addMessage: (
-    chatId: string,
-    senderId: string,
-    senderUsername: string,
-    text: string
-  ) => {
-    set((state) => ({
-      chats: state.chats.map((chat) => {
-        if (chat.id === chatId) {
-          const newMessage: Message = {
-            id: String(Date.now()),
-            senderId,
-            senderUsername,
-            text,
-            timestamp: Date.now(),
-          };
-          return {
-            ...chat,
-            messages: [...chat.messages, newMessage],
-            lastMessage: newMessage,
-          };
-        }
-        return chat;
-      }),
-    }));
+
+  loadChat: async (room_id: number) => {
+    const state = get();
+    const chat = state.chats.find((c) => c.room_id === room_id);
+
+    if (chat?.loaded) {
+      return;
+    }
+
+    const user_1 = chat?.participants[0].id;
+    const user_2 = chat?.participants[1].id;
+
+    if (!user_1 || !user_2) {
+      console.error("Cannot load chat messages: participants not found");
+      return;
+    }
+
+    const res = await ChatAPI.getMessagess(user_1, user_2);
+    if (res.ok) {
+      set((state) => ({
+        chats: state.chats.map((c) => {
+          if (c.room_id === room_id) {
+            return {
+              ...c,
+              messages: res.data,
+              loaded: true,
+            };
+          }
+          return c;
+        }),
+      }));
+    } else {
+      console.error("Failed to load chat messages:", res.error);
+    }
   },
 }));

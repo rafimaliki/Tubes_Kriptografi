@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/auth.store";
 import { useChatStore } from "@/store/chat.store";
 import UserIcon from "./user-icon";
 import NewChatModal from "./new-chat-modal";
 
 interface ChatSidebarProps {
-  selectedChatId: string | null;
-  onSelectChat: (chatId: string) => void;
+  selectedChatId: number | null;
+  onSelectChat: (room_id: number) => void;
   onLogout: () => void;
 }
 
@@ -16,12 +16,10 @@ export default function ChatSidebar({
   onLogout,
 }: ChatSidebarProps) {
   const { currentUser } = useAuthStore();
-  const { getChatsForUser } = useChatStore();
+  const { chats } = useChatStore();
   const [showNewChatModal, setShowNewChatModal] = useState(false);
 
   if (!currentUser) return null;
-
-  const userChats = getChatsForUser(currentUser.username);
 
   return (
     <div className="w-72 bg-white border-r border-gray-200 flex flex-col">
@@ -44,21 +42,23 @@ export default function ChatSidebar({
 
       {/* Chat List */}
       <div className="flex-1 overflow-y-auto">
-        {userChats.length === 0 ? (
+        {chats.length === 0 ? (
           <p className="p-4 text-center text-gray-500">No chats yet</p>
         ) : (
-          userChats.map((chat) => {
+          chats.map((chat) => {
             const otherUserUsername = chat.participants.find(
-              (p) => p !== currentUser.username
-            );
-            const lastMessage = chat.messages[chat.messages.length - 1];
+              (p) => p.username !== currentUser.username
+            )?.username;
+            const last_message = chat.messages[chat.messages.length - 1];
 
             return (
               <div
-                key={chat.id}
-                onClick={() => onSelectChat(chat.id)}
+                key={chat.room_id}
+                onClick={() => onSelectChat(chat.room_id)}
                 className={`p-4 cursor-pointer border-b border-gray-200 transition ${
-                  selectedChatId === chat.id ? "bg-blue-50" : "hover:bg-gray-50"
+                  selectedChatId === chat.room_id
+                    ? "bg-blue-50"
+                    : "hover:bg-gray-50"
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -68,8 +68,8 @@ export default function ChatSidebar({
                       {otherUserUsername}
                     </p>
                     <p className="text-sm text-gray-500 truncate">
-                      {lastMessage
-                        ? `${lastMessage.senderUsername}: ${lastMessage.text}`
+                      {last_message
+                        ? `${chat.participants.find((p) => p.id === last_message.from_user_id)?.username}: ${last_message.message}`
                         : "No messages yet"}
                     </p>
                   </div>
@@ -104,8 +104,8 @@ export default function ChatSidebar({
       <NewChatModal
         isOpen={showNewChatModal}
         onClose={() => setShowNewChatModal(false)}
-        onChatCreated={(chatId) => {
-          onSelectChat(chatId);
+        onChatCreated={(room_id) => {
+          onSelectChat(room_id);
           setShowNewChatModal(false);
         }}
       />

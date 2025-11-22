@@ -10,13 +10,13 @@ interface ChatRoomProps {
 
 export default function ChatRoom({ chat }: ChatRoomProps) {
   const { currentUser } = useAuthStore();
-  const { addMessage } = useChatStore();
+  const { sendMessage } = useChatStore();
   const [messageText, setMessageText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const otherUserUsername = chat.participants.find(
-    (p) => p !== currentUser?.username
-  );
+    (p) => p.username !== currentUser?.username
+  )?.username;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -29,7 +29,7 @@ export default function ChatRoom({ chat }: ChatRoomProps) {
   const handleSendMessage = () => {
     if (!messageText.trim() || !currentUser) return;
 
-    addMessage(chat.id, currentUser.id, currentUser.username, messageText);
+    sendMessage(chat.room_id, messageText.trim());
     setMessageText("");
   };
 
@@ -62,7 +62,8 @@ export default function ChatRoom({ chat }: ChatRoomProps) {
         ) : (
           <>
             {chat.messages.map((message) => {
-              const isCurrentUser = message.senderId === currentUser?.id;
+              const isCurrentUser =
+                message.from_user_id === Number(currentUser?.id);
               return (
                 <div
                   key={message.id}
@@ -75,13 +76,13 @@ export default function ChatRoom({ chat }: ChatRoomProps) {
                         : "bg-gray-200 text-gray-900"
                     }`}
                   >
-                    <p className="break-words">{message.text}</p>
+                    <p className="break-words">{message.message}</p>
                     <p
                       className={`text-xs mt-1 ${
                         isCurrentUser ? "text-blue-100" : "text-gray-500"
                       }`}
                     >
-                      {new Date(message.timestamp).toLocaleTimeString([], {
+                      {new Date(message.created_at).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}

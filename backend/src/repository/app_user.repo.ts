@@ -40,4 +40,19 @@ export const UserRepository = {
       throw new Error("Failed to retrieve user: " + (error as Error).message);
     }
   },
+
+  async getById(id: number) {
+    try {
+      const result = await db
+        .select()
+        .from(app_user)
+        .where(eq(app_user.id, id));
+      if (result.length === 0) {
+        return null;
+      }
+      return result[0];
+    } catch (error) {
+      throw new Error("Failed to retrieve user: " + (error as Error).message);
+    }
+  },
 };

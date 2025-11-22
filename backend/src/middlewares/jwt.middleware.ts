@@ -12,7 +12,6 @@ export function JwtMiddleware(req: Request, res: Response, next: Function) {
   try {
     const decoded = verifyJwt(token);
     (req as any).user = decoded;
-    console.log("Decoded JWT:", decoded);
     next();
   } catch (error) {
     return res.status(401).json({ error: "Invalid or expired token" });

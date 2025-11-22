@@ -46,9 +46,9 @@ export const AuthHandler = {
       }
 
       const jwt_payload = {
-        user_id: app_user.id,
+        id: app_user.id,
         username: app_user.username,
-        user_public_key: app_user.public_key,
+        public_key: app_user.public_key,
       };
 
       const jwt_token = generateJwt(jwt_payload);

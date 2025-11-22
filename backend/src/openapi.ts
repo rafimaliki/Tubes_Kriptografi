@@ -6,6 +6,7 @@ import {
 import { HealthAPISchema } from "@/schemas/health.schema";
 import { AuthAPISchema } from "@/schemas/auth.schema";
 import { ChatAPISchema } from "@/schemas/chat.schema";
+import { UserAPISchema } from "@/schemas/user.schema";
 
 const registry = new OpenAPIRegistry();
 
@@ -175,17 +176,17 @@ registry.registerPath({
   },
 });
 
-registry.register("GetChatMessagesRequest", ChatAPISchema.get.req);
-registry.register("GetChatMessagesResponse", ChatAPISchema.get.res);
+registry.register("GetMessagesRequest", ChatAPISchema.getMessages.req);
+registry.register("GetMessagesResponse", ChatAPISchema.getMessages.res);
 registry.registerPath({
   method: "get",
-  path: "/chat",
+  path: "/chat/messages",
   summary: "Get chat messages between users",
   description: "Retrieve chat messages exchanged between two users",
   tags: ["Chat"],
   security: [{ BearerAuth: [] }],
   parameters: [
-    ...(Object.keys(ChatAPISchema.get.req.shape).map((key) => ({
+    ...(Object.keys(ChatAPISchema.getMessages.req.shape).map((key) => ({
       name: key,
       in: "query",
       required: true,
@@ -197,7 +198,7 @@ registry.registerPath({
       content: {
         "application/json": {
           schema: {
-            $ref: "#/components/schemas/GetChatMessagesResponse",
+            $ref: "#/components/schemas/GetMessagesResponse",
           },
         },
       },
@@ -207,6 +208,70 @@ registry.registerPath({
     },
     401: {
       description: "Unauthorized - Invalid or missing Bearer token",
+    },
+  },
+});
+
+registry.register("GetRecentsResponse", ChatAPISchema.getRecents.res);
+registry.registerPath({
+  method: "get",
+  path: "/chat/recents",
+  summary: "Get recent chat messages",
+  description: "Retrieve recent chat messages for a user",
+  tags: ["Chat"],
+  security: [{ BearerAuth: [] }],
+  responses: {
+    200: {
+      description: "Recent chat messages retrieved successfully",
+      content: {
+        "application/json": {
+          schema: {
+            $ref: "#/components/schemas/GetRecentsResponse",
+          },
+        },
+      },
+    },
+    400: {
+      description: "Invalid request",
+    },
+    401: {
+      description: "Unauthorized - Invalid or missing Bearer token",
+    },
+  },
+});
+
+registry.register("GetUserRequest", UserAPISchema.get.req);
+registry.register("GetUserResponse", UserAPISchema.get.res);
+registry.registerPath({
+  method: "get",
+  path: "/user/{username}",
+  summary: "Get user by username",
+  description: "Retrieve user details by username",
+  tags: ["Users"],
+  security: [{ BearerAuth: [] }],
+  parameters: [
+    ...(Object.keys(UserAPISchema.get.req.shape).map((key) => ({
+      name: key,
+      in: "path",
+      required: true,
+    })) as any),
+  ],
+  responses: {
+    200: {
+      description: "User retrieved successfully",
+      content: {
+        "application/json": {
+          schema: {
+            $ref: "#/components/schemas/GetUserResponse",
+          },
+        },
+      },
+    },
+    404: {
+      description: "User not found",
+    },
+    500: {
+      description: "Internal server error",
     },
   },
 });

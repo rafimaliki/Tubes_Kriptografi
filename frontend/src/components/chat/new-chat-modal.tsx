@@ -5,7 +5,7 @@ import { useChatStore } from "@/store/chat.store";
 interface NewChatModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onChatCreated: (chatId: string) => void;
+  onChatCreated: (room_id: number) => void;
 }
 
 export default function NewChatModal({
@@ -13,26 +13,32 @@ export default function NewChatModal({
   onClose,
   onChatCreated,
 }: NewChatModalProps) {
-  const { currentUser, users } = useAuthStore();
-  const { getOrCreateChat } = useChatStore();
+  const { currentUser } = useAuthStore();
+  const { getOrCreateChatWith } = useChatStore();
   const [newChatUsername, setNewChatUsername] = useState("");
   const [error, setError] = useState("");
 
-  const handleStartNewChat = () => {
-    const otherUser = users.find((u) => u.username === newChatUsername);
+  const handleStartNewChat = async () => {
+    const otherUser = newChatUsername.trim();
+
     if (!otherUser) {
       setError("User not found");
       return;
     }
-    if (otherUser.username === currentUser?.username) {
+
+    if (otherUser === currentUser?.username) {
       setError("Cannot chat with yourself");
       return;
     }
 
-    const chat = getOrCreateChat(currentUser!.username, otherUser.username);
-    onChatCreated(chat.id);
-    setNewChatUsername("");
     setError("");
+    try {
+      const chat = await getOrCreateChatWith(otherUser);
+      onChatCreated(chat.room_id);
+      setNewChatUsername("");
+    } catch (error) {
+      setError("User not found");
+    }
   };
 
   if (!isOpen) return null;

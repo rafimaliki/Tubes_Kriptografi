@@ -4,6 +4,7 @@ import { JwtMiddleware } from "@/middlewares/jwt.middleware";
 
 const router = Router();
 
-router.get("/", JwtMiddleware, ChatHandler.getMessages);
+router.get("/messages", JwtMiddleware, ChatHandler.getMessages);
+router.get("/recents", JwtMiddleware, ChatHandler.getRecents);
 
 export default router;
