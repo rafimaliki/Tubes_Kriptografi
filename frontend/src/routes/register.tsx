@@ -39,7 +39,10 @@ function RegisterPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+    <div
+      className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50"
+      style={{ height: "var(--vh, 100vh)" }}
+    >
       <div className="w-full max-w-md">
         <div className="bg-white rounded-3xl shadow-lg p-8 space-y-6">
           <div className="text-center">
