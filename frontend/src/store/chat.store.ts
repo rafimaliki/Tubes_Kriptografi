@@ -84,6 +84,11 @@ export const useChatStore = create<State>((set, get) => ({
       auth: {
         token: currentUser.jwt_token || "",
       },
+      transports: ["websocket", "polling"],
+      upgrade: true,
+      rememberUpgrade: true,
+      withCredentials: true,
+      forceNew: true,
     }) as ClientSocket;
 
     // load recent chats
@@ -91,10 +96,17 @@ export const useChatStore = create<State>((set, get) => ({
 
     // setup koneksi
     socket.on("connect", () => {
+      console.log("[socket] Connected to server");
       set(() => ({ connected: true, socketId: socket.id }));
     });
 
-    socket.on("disconnect", () => {
+    socket.on("disconnect", (reason) => {
+      console.log("[socket] Disconnected:", reason);
+      set(() => ({ connected: false, socketId: undefined }));
+    });
+
+    socket.on("connect_error", (error) => {
+      console.error("[socket] Connection error:", error);
       set(() => ({ connected: false, socketId: undefined }));
     });
 

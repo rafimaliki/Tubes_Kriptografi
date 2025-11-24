@@ -13,11 +13,19 @@ const socketUserMap = new Map<string, number>();
 export function initSocket(server: HttpServer) {
   if (io) return io;
 
+  const allowedOrigins = process.env.CLIENT_ORIGIN
+    ? process.env.CLIENT_ORIGIN.split(",").map((origin) => origin.trim())
+    : ["http://localhost:3000"];
+
   io = new Server(server, {
     cors: {
-      origin: process.env.CLIENT_ORIGIN || "http://localhost:3000",
+      origin: allowedOrigins,
       methods: ["GET", "POST"],
+      credentials: true,
+      allowedHeaders: ["Content-Type", "Authorization"],
     },
+    allowEIO3: true,
+    transports: ["websocket", "polling"],
   }) as IOType;
 
   io.use((socket, next) => {
