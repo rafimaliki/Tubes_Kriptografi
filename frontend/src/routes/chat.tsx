@@ -17,6 +17,7 @@ function ChatPage() {
 
   const navigate = useNavigate();
   const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
+  const [showChatRoom, setShowChatRoom] = useState(false);
   const { chats, loadChat, connect, disconnect } = useChatStore();
 
   useEffect(() => {
@@ -32,27 +33,50 @@ function ChatPage() {
     }
   }, [selectedChatId]);
 
+  const handleSelectChat = (room_id: number) => {
+    setSelectedChatId(room_id);
+    setShowChatRoom(true);
+  };
+
+  const handleBackToSidebar = () => {
+    setShowChatRoom(false);
+  };
+
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <ChatSidebar
-        selectedChatId={selectedChatId}
-        onSelectChat={setSelectedChatId}
-        onLogout={() => {
-          logout();
-          navigate({
-            to: "/login",
-          });
-        }}
-      />
+      {/* Sidebar  */}
+      <div
+        className={`${
+          showChatRoom ? "hidden md:flex" : "flex"
+        } w-full md:w-72 flex-col`}
+      >
+        <ChatSidebar
+          selectedChatId={selectedChatId}
+          onSelectChat={handleSelectChat}
+          onLogout={() => {
+            logout();
+            navigate({
+              to: "/login",
+            });
+          }}
+        />
+      </div>
 
       {/* Chatroom */}
       {selectedChatId ? (
-        <ChatRoom
-          chat={chats.find((chat) => chat.room_id === selectedChatId)!}
-        />
+        <div
+          className={`${
+            showChatRoom ? "flex" : "hidden md:flex"
+          } flex-1 flex-col`}
+        >
+          <ChatRoom
+            chat={chats.find((chat) => chat.room_id === selectedChatId)!}
+            onBack={handleBackToSidebar}
+            showBackButton={true}
+          />
+        </div>
       ) : (
-        <div className="flex-1 flex items-center justify-center">
+        <div className="hidden md:flex flex-1 items-center justify-center">
           <div className="text-center">
             <p className="text-gray-500 text-lg">
               Select a chat to get started

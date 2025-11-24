@@ -6,9 +6,15 @@ import UserIcon from "./user-icon";
 
 interface ChatRoomProps {
   chat: Chat;
+  onBack?: () => void;
+  showBackButton?: boolean;
 }
 
-export default function ChatRoom({ chat }: ChatRoomProps) {
+export default function ChatRoom({
+  chat,
+  onBack,
+  showBackButton = false,
+}: ChatRoomProps) {
   const { currentUser } = useAuthStore();
   const { sendMessage } = useChatStore();
   const [messageText, setMessageText] = useState("");
@@ -41,9 +47,30 @@ export default function ChatRoom({ chat }: ChatRoomProps) {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-white">
+    <div className="flex-1 flex flex-col bg-white h-screen">
       {/* Header */}
       <div className="p-4 border-b border-gray-200 flex items-center gap-3">
+        {showBackButton && (
+          <button
+            onClick={onBack}
+            className="md:hidden p-2 hover:bg-gray-100 rounded-full transition-colors"
+            aria-label="Go back to chat list"
+          >
+            <svg
+              className="w-5 h-5 text-gray-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+        )}
         <UserIcon username={otherUserUsername || ""} size={40} />
         <div>
           <p className="font-semibold text-gray-900">{otherUserUsername}</p>
