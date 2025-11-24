@@ -107,6 +107,8 @@ export const useChatStore = create<State>((set, get) => ({
       console.log("new_message dari server:", payload);
       const newMessage: Message = payload.chat as Message;
 
+      // create decryption here
+
       set((state) => {
         let updatedChat: Chat | null = null;
 
