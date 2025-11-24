@@ -43,13 +43,12 @@ function ChatPage() {
   };
 
   return (
-    <div className="flex bg-gray-50" style={{ height: "var(--vh, 100vh)" }}>
+    <div className="flex h-screen bg-gray-50">
       {/* Sidebar  */}
       <div
         className={`${
           showChatRoom ? "hidden md:flex" : "flex"
-        } w-full md:w-72 flex-col`}
-        style={{ height: "var(--vh, 100vh)" }}
+        } w-full md:w-72 flex-col h-screen`}
       >
         <ChatSidebar
           selectedChatId={selectedChatId}

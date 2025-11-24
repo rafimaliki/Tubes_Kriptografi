@@ -47,12 +47,9 @@ export default function ChatRoom({
   };
 
   return (
-    <div
-      className="flex-1 flex flex-col bg-white relative"
-      style={{ height: "var(--vh, 100vh)" }}
-    >
+    <div className="flex-1 flex flex-col bg-white h-screen max-h-screen">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 flex items-center gap-3">
+      <div className="p-4 border-b border-gray-200 flex items-center gap-3 flex-shrink-0">
         {showBackButton && (
           <button
             onClick={onBack}
@@ -77,7 +74,6 @@ export default function ChatRoom({
         <UserIcon username={otherUserUsername || ""} size={40} />
         <div>
           <p className="font-semibold text-gray-900">{otherUserUsername}</p>
-          {/* <p className="text-sm text-gray-500">Active now</p> */}
         </div>
       </div>
 
@@ -127,19 +123,19 @@ export default function ChatRoom({
       </div>
 
       {/* Input */}
-      <div className="sticky bottom-0 bg-white p-4 border-t border-gray-200 flex gap-2 items-end safe-area-inset-bottom">
+      <div className="p-4 border-t border-gray-200 flex gap-2 items-end flex-shrink-0 bg-white">
         <textarea
           value={messageText}
           onChange={(e) => setMessageText(e.target.value)}
           onKeyPress={handleKeyPress}
           placeholder="Type a message..."
-          className="w-full rounded-xl border border-gray-300 py-2 px-3 resize-none overflow-y-auto leading-5 text-base"
+          className="w-full rounded-xl border border-gray-300 py-2 px-3 resize-none overflow-y-auto leading-5"
           rows={1}
           style={{
             minHeight: "40px",
             maxHeight: "120px",
             height: "auto",
-            fontSize: "16px", // Prevents zoom on iOS
+            fontSize: "16px",
           }}
           onInput={(e) => {
             const target = e.target as HTMLTextAreaElement;
