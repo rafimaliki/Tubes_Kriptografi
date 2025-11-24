@@ -37,5 +37,10 @@ server.listen(port, () => {
   console.log(
     `To seed the database, run: docker-compose exec backend npm run db:seed`
   );
-  console.log(`Swagger docs available at http://localhost:${port}/api-docs`);
+  const apiBaseUrl =
+    process.env.API_BASE_URL ||
+    `http://localhost:${port === 3000 ? 3001 : port}`;
+  console.log(
+    `Swagger docs available at ${apiBaseUrl.replace("/api", "")}/api-docs`
+  );
 });

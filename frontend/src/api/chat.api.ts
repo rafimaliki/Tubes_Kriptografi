@@ -1,5 +1,6 @@
 import axios from "axios";
-const BACKEND_URL = "http://localhost:3001/api/";
+const BACKEND_URL =
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:3001/api/";
 
 import type { MessagesApiResult, RecentsApiResult } from "@/types/ApiResult";
 import { JWT } from "@/lib/Jwt";

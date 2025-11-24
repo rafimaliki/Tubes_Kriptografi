@@ -291,7 +291,7 @@ export const openApiDocument = generator.generateDocument({
   },
   servers: [
     {
-      url: "http://localhost:3001/api",
+      url: process.env.API_BASE_URL || "http://localhost:3001/api",
       description: "Local server",
     },
   ],

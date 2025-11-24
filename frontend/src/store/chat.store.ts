@@ -4,7 +4,7 @@ import type { User } from "./auth.store";
 import { UserAPI } from "@/api/user.api";
 import { ChatAPI } from "@/api/chat.api";
 
-const SOCKET_URL = "http://localhost:3001";
+const SOCKET_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 export interface ClientToServerEvents {
   new_message: (

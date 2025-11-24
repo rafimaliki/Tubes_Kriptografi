@@ -2,11 +2,7 @@ import { db } from "@/repo/db";
 import { app_user, chat, chat_room } from "@/repo/schema";
 import dotenv from "dotenv";
 import crypto from "crypto";
-import { create } from "domain";
-import { createBrotliCompress } from "zlib";
 import { ChatRoomRepository } from "@/repository/chat_room.repo";
-import { time } from "console";
-import { timestamp } from "drizzle-orm/mysql-core";
 dotenv.config();
 
 async function seedUsers() {

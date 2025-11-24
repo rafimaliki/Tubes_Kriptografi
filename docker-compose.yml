@@ -25,6 +25,8 @@ services:
       - NODE_ENV=development
       - PORT=3000
       - DATABASE_URL=postgresql://postgres:password@postgres:5432/cryptalk_db
+      - CLIENT_ORIGIN=http://localhost:3000
+      - API_BASE_URL=http://localhost:3001/api
     ports:
       - "3001:3000"
     volumes:
@@ -49,7 +51,7 @@ services:
       dockerfile: Dockerfile
     container_name: frontend
     environment:
-      - VITE_API_URL=http://localhost:3001
+      - VITE_BACKEND_URL=http://localhost:3001/api/
     ports:
       - "3000:3000"
     volumes:

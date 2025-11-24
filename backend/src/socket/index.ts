@@ -57,11 +57,6 @@ export function initSocket(server: HttpServer) {
 
     // event dari client
     socket.on("new_message", async (data, callback) => {
-      console.log(
-        `[socket] new_message_from_client from userId=${userId}:`,
-        data
-      );
-
       const new_chat = await ChatRepository.create(
         data.from_user_id,
         data.to_user_id,
@@ -77,9 +72,6 @@ export function initSocket(server: HttpServer) {
       // broadcast ke penerima
       const to_user_id = data.to_user_id;
       const to_socket_id = userSocketMap.get(to_user_id);
-
-      console.log("[socket] user->socket map:", userSocketMap);
-      console.log("[socket] to_socket_id:", to_socket_id);
 
       if (to_socket_id) {
         io?.to(to_socket_id).emit("new_message", { chat: new_chat });
