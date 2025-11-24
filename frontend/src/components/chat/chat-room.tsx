@@ -47,7 +47,10 @@ export default function ChatRoom({
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-white h-screen max-h-screen">
+    <div
+      className="flex-1 flex flex-col bg-white relative"
+      style={{ height: "var(--vh, 100vh)" }}
+    >
       {/* Header */}
       <div className="p-4 border-b border-gray-200 flex items-center gap-3 flex-shrink-0">
         {showBackButton && (
@@ -78,7 +81,10 @@ export default function ChatRoom({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+      <div
+        className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0"
+        style={{ paddingBottom: "80px" }}
+      >
         {chat.messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-gray-500">
@@ -123,7 +129,7 @@ export default function ChatRoom({
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-gray-200 flex gap-2 items-end flex-shrink-0 bg-white">
+      <div className="fixed bottom-0 left-0 right-0 md:relative md:bottom-auto md:left-auto md:right-auto p-4 border-t border-gray-200 flex gap-2 items-end bg-white z-10">
         <textarea
           value={messageText}
           onChange={(e) => setMessageText(e.target.value)}
