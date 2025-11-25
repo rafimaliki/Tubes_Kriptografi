@@ -3,8 +3,10 @@ import CryptoJS from 'crypto-js';
 
 const ec = new EC.ec('p256'); // Elliptic Curve P-256 (secp256r1)
 
-export function generateKeyPair() {
-  const key = ec.genKeyPair();
+export function generateKeyPair(password: string):{ publicKey: string; privateKey: string } {
+  const seedHex = CryptoJS.SHA256(password).toString();
+
+  const key = ec.keyFromPrivate(seedHex, 'hex');  
   return {
     publicKey: key.getPublic('hex'),
     privateKey: key.getPrivate('hex'),
