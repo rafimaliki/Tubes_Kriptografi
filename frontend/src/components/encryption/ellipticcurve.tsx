@@ -1,10 +1,13 @@
 import EC from 'elliptic';
 import CryptoJS from 'crypto-js';
+import SHA3 from 'js-sha3';
 
 const ec = new EC.ec('p256'); // Elliptic Curve P-256 (secp256r1)
 
-export function generateKeyPair() {
-  const key = ec.genKeyPair();
+export function generateKeyPair(password: string):{ publicKey: string; privateKey: string } {
+  const seedHex = SHA3.sha3_256(password);
+
+  const key = ec.keyFromPrivate(seedHex, 'hex');  
   return {
     publicKey: key.getPublic('hex'),
     privateKey: key.getPrivate('hex'),
@@ -18,12 +21,12 @@ export function hashMessage(
   receiverUsername: string
 ): string {
   const data = `${message}${timestamp}${senderUsername}${receiverUsername}`;
-  return CryptoJS.SHA256(data).toString();
+  return SHA3.sha3_256(data);
 }
 
 export function signMessage(
   privateKeyHex: string,
-  messageHash: string
+  messageHash: string // hex string
 ): { r: string; s: string } {
   const key = ec.keyFromPrivate(privateKeyHex);
   const signature = key.sign(messageHash);
@@ -53,7 +56,7 @@ export function encryptMessage(publicKeyHex: string, plaintext: string): string 
   
   const sharedSecret = ephemeralKey.derive(publicKey.getPublic());
   
-  const encryptionKey = CryptoJS.SHA256(sharedSecret.toString()).toString();
+  const encryptionKey = SHA3.sha3_256(sharedSecret.toString());
   
   const encrypted = CryptoJS.AES.encrypt(plaintext, encryptionKey).toString();
   
@@ -73,7 +76,7 @@ export function decryptMessage(privateKeyHex: string, encryptedData: string): st
     
     const sharedSecret = privateKey.derive(ephemeralKey.getPublic());
     
-    const decryptionKey = CryptoJS.SHA256(sharedSecret.toString()).toString();
+    const decryptionKey = SHA3.sha3_256(sharedSecret.toString());
     
     const decrypted = CryptoJS.AES.decrypt(encrypted, decryptionKey).toString(
       CryptoJS.enc.Utf8
