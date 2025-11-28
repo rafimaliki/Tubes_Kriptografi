@@ -13,6 +13,7 @@ export interface MessageEntry {
   message: string;
   room_id: number;
   created_at: string;
+  // signature: string;
 }
 
 // chat api

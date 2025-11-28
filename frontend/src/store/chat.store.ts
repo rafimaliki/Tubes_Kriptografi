@@ -3,6 +3,13 @@ import { io, Socket } from "socket.io-client";
 import type { User } from "./auth.store";
 import { UserAPI } from "@/api/user.api";
 import { ChatAPI } from "@/api/chat.api";
+import {
+  hashMessage,
+  signMessage,
+  verifySignature,
+  encryptMessage,
+  decryptMessage
+} from "@/lib/EllipticCurve";
 
 const SOCKET_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
@@ -31,7 +38,8 @@ export interface Message {
   to_user_id: number;
   room_id: number;
   message: string;
-  created_at: string;
+  created_at: string; // timestamp
+  // signature: string;
 }
 
 export interface Chat {
@@ -154,13 +162,15 @@ export const useChatStore = create<State>((set, get) => ({
     }
   },
 
-  sendMessage: (room_id: number, message: string) => {
+  sendMessage: async (room_id: number, message: string) => {
+    // cek koneksi ke socket
     const s = get();
     if (!s.socket || !s.connected) {
       console.error("Socket not connected. Cannot send message.");
       return;
     }
 
+    // cek sender dan receiver
     const from_user_id = s.currentUser?.id;
     const to_user_id = get()
       .chats.find((chat) => chat.room_id === room_id)
@@ -171,11 +181,22 @@ export const useChatStore = create<State>((set, get) => ({
       return;
     }
 
+    // dapatkan data receiver
+    const receiver = await UserAPI.getById(to_user_id);
+    if (!receiver.ok) {
+      console.error("Cannot send message: receiver not found");
+      return;
+    }
+
+    // lakukan enkripsi pesan
+    console.log("Public key:", receiver.data.public_key);
+    const ciphertext = encryptMessage(receiver.data.public_key, message);
+
     const chat = {
       room_id,
       from_user_id,
       to_user_id,
-      message,
+      message: ciphertext      
     };
 
     s.socket.emit("new_message", chat, (response) => {
