@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS "chat" (
 	"from_user_id" serial NOT NULL,
 	"to_user_id" serial NOT NULL,
 	"message" varchar(1024) NOT NULL,
-	"timestamp" timestamp with time zone DEFAULT now() NOT NULL
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "chat_room" (
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS "nonce_store" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"username" varchar(32) NOT NULL,
 	"nonce" varchar(64) NOT NULL,
-	"timestamp" timestamp with time zone DEFAULT now() NOT NULL
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 DO $$ BEGIN

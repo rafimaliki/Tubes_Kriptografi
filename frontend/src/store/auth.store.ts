@@ -7,6 +7,11 @@ import type {
 } from "@/types/ApiResult";
 import { Base64 } from "@/lib/Base64";
 import { LocalStorage } from "@/lib/LocalStorage";
+import { SessionStorage } from "@/lib/SessionStorage";
+import {
+  generateKeyPair,
+  signMessage
+} from "@/lib/EllipticCurve"
 
 export interface User {
   id: number;
@@ -33,6 +38,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   login: async (username: string, password: string) => {
     try {
       // 1) generate key pair dulu
+      const { publicKey, privateKey } = generateKeyPair(password);
 
       // 2) request challenge nonce
       const challenge_res = await AuthAPI.challenge(username);
@@ -43,13 +49,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
       const { nonce_id, nonce } = challenge_res.data;
 
-      // 3) sign nonce
-      /** TO DO (pindahin ke file lain jangan disini) */
-      const signNonceWithPassword = async (pw: string, n: string) => {
-        return btoa(`${n}:${pw}`);
-      };
-
-      const signed_nonce = await signNonceWithPassword(password, nonce);
+      // 3) sign nonce with private key
+      const signed_nonce = signMessage(privateKey, nonce);
 
       // 4) kirim login request dengan signed nonce
       const login_res = await AuthAPI.login(username, nonce_id, signed_nonce);
@@ -73,6 +74,11 @@ export const useAuthStore = create<AuthStore>((set) => ({
       set({ currentUser: user });
       LocalStorage.save(LOCAL_STORAGE_KEY, user);
 
+      // 7) save private key dan public key di localstorage
+      LocalStorage.save(`private_key`, privateKey);
+      LocalStorage.save('original_private_key', privateKey);
+      LocalStorage.save(`public_key`, publicKey);
+
       return login_res;
     } catch (err) {
       return { ok: false, error: "Unexpected error during login" };
@@ -81,21 +87,13 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
   register: async (username: string, password: string) => {
     try {
-      // fungsi public/private key pair
-      /** TO DO (pindahin ke file lain jangan disini) */
-      const generateKeyPairWithPassword = async (pw: string) => {
-        return {
-          public_key: btoa(`public-key-for-${pw}`),
-          private_key: btoa(`private-key-for-${pw}`),
-        };
-      };
-
       // 1) generate key pair
-      const { public_key, private_key } =
-        await generateKeyPairWithPassword(password);
+      const { publicKey } = generateKeyPair(password);
 
       // 2) kirim request register ke backend
-      const register_res = await AuthAPI.register(username, public_key);
+      const register_res = await AuthAPI.register(username, publicKey);
+
+      console.log("Public Key:", publicKey);
 
       return register_res;
     } catch (err) {
@@ -106,6 +104,6 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
   logout: () => {
     set({ currentUser: null });
-    LocalStorage.save(LOCAL_STORAGE_KEY, null);
+    LocalStorage.deleteAll();
   },
 }));

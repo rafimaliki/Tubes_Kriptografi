@@ -6,6 +6,7 @@ export interface ClientToServerEvents {
       from_user_id: number;
       to_user_id: number;
       message: string;
+      message_for_sender: string;
       room_id: number;
     },
     callback: (response: any) => void

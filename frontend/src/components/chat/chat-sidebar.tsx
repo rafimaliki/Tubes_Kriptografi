@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuthStore } from "@/store/auth.store";
 import { useChatStore } from "@/store/chat.store";
 import UserIcon from "./user-icon";
@@ -8,12 +8,16 @@ interface ChatSidebarProps {
   selectedChatId: number | null;
   onSelectChat: (room_id: number) => void;
   onLogout: () => void;
+  debugMode: boolean;
+  setDebugMode: (value: boolean) => void;
 }
 
 export default function ChatSidebar({
   selectedChatId,
   onSelectChat,
   onLogout,
+  debugMode,
+  setDebugMode,
 }: ChatSidebarProps) {
   const { currentUser } = useAuthStore();
   const { chats } = useChatStore();
@@ -78,6 +82,27 @@ export default function ChatSidebar({
             );
           })
         )}
+      </div>
+
+      {/* Debug Mode Toggle */}
+      <div className="px-4 py-3 border-t border-gray-200 bg-gray-50">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-gray-700">
+            Enable Debug Mode
+          </span>
+          <button
+            onClick={() => setDebugMode(!debugMode)}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              debugMode ? "bg-blue-500" : "bg-gray-300"
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                debugMode ? "translate-x-6" : "translate-x-1"
+              }`}
+            />
+          </button>
+        </div>
       </div>
 
       {/* Current User Info */}

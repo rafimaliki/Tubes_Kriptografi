@@ -31,4 +31,19 @@ export const UserAPISchema = {
       description: "Get user response payload",
     }),
   },
+  getById: {
+    req: z
+      .object({
+        id: z.coerce.number().openapi({
+          description: "The ID of the user to retrieve",
+          example: 123,
+        }),
+      })
+      .openapi({
+        description: "Get user by ID request payload",
+      }),
+    res: UserSchema.openapi({
+      description: "Get user response payload",
+    }),
+  },
 };

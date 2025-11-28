@@ -4,12 +4,13 @@ import {
   varchar,
   timestamp,
   integer,
+  text,
 } from "drizzle-orm/pg-core";
 
 export const app_user = pgTable("app_user", {
   id: serial("id").primaryKey().notNull(),
   username: varchar("username", { length: 32 }).notNull().unique(),
-  public_key: varchar("public_key", { length: 64 }).notNull(),
+  public_key: varchar("public_key", { length: 512 }).notNull(),
   created_at: timestamp("created_at", {
     withTimezone: true,
     mode: "date",
@@ -22,7 +23,7 @@ export const nonce_store = pgTable("nonce_store", {
   id: serial("id").primaryKey().notNull(),
   username: varchar("username", { length: 32 }).notNull(),
   nonce: varchar("nonce", { length: 64 }).notNull(),
-  created_at: timestamp("timestamp", {
+  created_at: timestamp("created_at", {
     withTimezone: true,
     mode: "date",
   })
@@ -51,7 +52,8 @@ export const chat = pgTable("chat", {
     }),
   from_user_id: serial("from_user_id").notNull(),
   to_user_id: serial("to_user_id").notNull(),
-  message: varchar("message", { length: 1024 }).notNull(),
+  message: text("message").notNull(),
+  message_for_sender: text("message_for_sender").notNull(),
   created_at: timestamp("created_at", {
     withTimezone: true,
     mode: "date",

@@ -3,6 +3,15 @@ import { io, Socket } from "socket.io-client";
 import type { User } from "./auth.store";
 import { UserAPI } from "@/api/user.api";
 import { ChatAPI } from "@/api/chat.api";
+import { SessionStorage } from "@/lib/SessionStorage";
+import { LocalStorage } from "@/lib/LocalStorage";
+import {
+  hashMessage,
+  signMessage,
+  verifySignature,
+  encryptMessage,
+  decryptMessage
+} from "@/lib/EllipticCurve";
 
 const SOCKET_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
@@ -31,7 +40,9 @@ export interface Message {
   to_user_id: number;
   room_id: number;
   message: string;
-  created_at: string;
+  message_for_sender: string;
+  created_at: string; // timestamp
+  // signature: string;
 }
 
 export interface Chat {
@@ -59,6 +70,7 @@ type State = {
   // data chat
   currentUser: User | null;
   chats: Chat[];
+  lastSentMessage?: string;
   getChats: () => Promise<Chat[]>;
   getOrCreateChatWith: (otherUsername: string) => Promise<Chat>;
   loadChat: (room_id: number) => Promise<void>;
@@ -119,6 +131,29 @@ export const useChatStore = create<State>((set, get) => ({
       console.log("new_message dari server:", payload);
       const newMessage: Message = payload.chat as Message;
 
+      // dapatkan private key
+      const privateKey = LocalStorage.load("private_key");
+      if (!privateKey || typeof privateKey !== "string") {
+        console.error("Private key not found in localStorage");
+        return;
+      }
+
+      const currentUserId = get().currentUser?.id;
+
+      // gunakan message_for_sender jika pesan dikirim oleh user saat ini
+      const messageToDecrypt = newMessage.from_user_id === currentUserId 
+        ? newMessage.message_for_sender 
+        : newMessage.message;
+
+      // decrypt pesan
+      try {
+        const decryptedMessage = decryptMessage(privateKey, messageToDecrypt);
+        newMessage.message = decryptedMessage;
+      } catch (error) {
+        console.error('Failed to decrypt incoming message:', error);
+        newMessage.message = messageToDecrypt;
+      }
+
       set((state) => {
         let updatedChat: Chat | null = null;
 
@@ -152,13 +187,15 @@ export const useChatStore = create<State>((set, get) => ({
     }
   },
 
-  sendMessage: (room_id: number, message: string) => {
+  sendMessage: async (room_id: number, message: string) => {
+    // cek koneksi ke socket
     const s = get();
     if (!s.socket || !s.connected) {
       console.error("Socket not connected. Cannot send message.");
       return;
     }
 
+    // cek sender dan receiver
     const from_user_id = s.currentUser?.id;
     const to_user_id = get()
       .chats.find((chat) => chat.room_id === room_id)
@@ -169,17 +206,40 @@ export const useChatStore = create<State>((set, get) => ({
       return;
     }
 
+    // dapatkan data receiver
+    const receiver = await UserAPI.getById(to_user_id);
+    if (!receiver.ok) {
+      console.error("Cannot send message: receiver not found");
+      return;
+    }
+
+    // lakukan enkripsi pesan
+    console.log("Public key:", receiver.data.public_key);
+    const ciphertext = encryptMessage(receiver.data.public_key, message);
+
+    // lakukan enkripsi pesan menggunakan public key sender (agar sender bisa baca juga)
+    const senderPublicKey = LocalStorage.load("public_key");
+    if (!senderPublicKey || typeof senderPublicKey !== "string") {
+      console.error("Sender public key not found in localStorage");
+      return;
+    }
+    const ciphertextForSender = encryptMessage(senderPublicKey, message);
+
     const chat = {
       room_id,
       from_user_id,
       to_user_id,
-      message,
+      message: ciphertext,
+      message_for_sender: ciphertextForSender
     };
+    set(() => ({ lastSentMessage: message }));
 
+    // kirim
     s.socket.emit("new_message", chat, (response) => {
       console.log("Response dari server untuk new_message:", response);
 
       const newMessage: Message = response.chat as Message;
+      newMessage.message = get().lastSentMessage || "mana"; // gunakan pesan asli yang belum dienkripsi untuk ditampilkan
 
       set((state) => {
         let updatedChat: Chat | null = null;
@@ -302,7 +362,39 @@ export const useChatStore = create<State>((set, get) => ({
     }
 
     const res = await ChatAPI.getMessagess(user_1, user_2);
+    
     if (res.ok) {
+      // dekripsi semua pesan dari server
+      const privateKey = LocalStorage.load("private_key");
+      if (!privateKey || typeof privateKey !== "string") {
+        console.error("Private key not found in localStorage");
+        return;
+      }
+
+      const currentUserId = get().currentUser?.id;
+
+      res.data = res.data.map((msg) => {
+        // gunakan message_for_sender jika pesan dikirim oleh user saat ini
+        const messageToDecrypt = msg.from_user_id === currentUserId 
+          ? msg.message_for_sender 
+          : msg.message;
+        
+        try {
+          const decryptedMessage = decryptMessage(privateKey, messageToDecrypt);
+          return {
+            ...msg,
+            message: decryptedMessage,
+          };
+        } catch (error) {
+          console.error('Failed to decrypt message:', error);
+          return {
+            ...msg,
+            message: messageToDecrypt,
+          };
+        }
+      });
+
+      // tampilkan
       set((state) => ({
         chats: state.chats.map((c) => {
           if (c.room_id === room_id) {

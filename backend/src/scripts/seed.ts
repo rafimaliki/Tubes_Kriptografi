@@ -3,16 +3,17 @@ import { app_user, chat, chat_room } from "@/repo/schema";
 import dotenv from "dotenv";
 import crypto from "crypto";
 import { ChatRoomRepository } from "@/repository/chat_room.repo";
+import { generateKeyPair, encryptMessage } from "@/lib/elliptic-curve";
 dotenv.config();
 
 async function seedUsers() {
   const num_users = 10;
 
   const users = Array.from({ length: num_users }, (_, i) => {
-    const random_key = crypto.randomBytes(32).toString("hex");
+    const { publicKey } = generateKeyPair("password1");
     return {
       username: `user${i + 1}`,
-      public_key: random_key,
+      public_key: publicKey,
     };
   });
 
@@ -68,11 +69,18 @@ async function seedChats() {
             Math.random() * (now.getTime() - startTime.getTime())
         );
 
+        // encrypt message for receiver
+        const encryptedMessage = encryptMessage(to.public_key, randomSentence);
+        
+        // encrypt message for sender (so sender can read their own messages)
+        const encryptedMessageForSender = encryptMessage(from.public_key, randomSentence);
+
         chats.push({
           from_user_id: from.id,
           to_user_id: to.id,
           room_id: room_id,
-          message: randomSentence,
+          message: encryptedMessage,
+          message_for_sender: encryptedMessageForSender,
           created_at: randomTime,
         });
       }

@@ -20,4 +20,19 @@ export const UserAPI = {
       return { ok: false, error: String(msg) };
     }
   },
+
+  getById: async (id: number): Promise<UserApiResult> => {
+    try {
+      const res = await axios.get(BACKEND_URL + `user/id/${id}`, {
+        headers: {
+          Authorization: `Bearer ${JWT.get()}`,
+        },
+      });
+      return { ok: true, data: res.data };
+    } catch (err: any) {
+      console.error("UserAPI.getById error:", err);
+      const msg = err?.response?.data?.error ?? "Network error";
+      return { ok: false, error: String(msg) };
+    }
+  },
 };

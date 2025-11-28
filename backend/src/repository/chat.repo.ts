@@ -9,6 +9,7 @@ export const ChatRepository = {
     from_user_id: number,
     to_user_id: number,
     message: string,
+    message_for_sender: string,
     room_id?: number
   ) {
     try {
@@ -25,6 +26,7 @@ export const ChatRepository = {
           from_user_id,
           to_user_id,
           message,
+          message_for_sender,
         })
         .returning({
           id: chat.id,
@@ -32,6 +34,7 @@ export const ChatRepository = {
           to_user_id: chat.to_user_id,
           room_id: chat.room_id,
           message: chat.message,
+          message_for_sender: chat.message_for_sender,
           created_at: chat.created_at,
         });
       return {
@@ -40,6 +43,7 @@ export const ChatRepository = {
         to_user_id: row.to_user_id,
         room_id: row.room_id,
         message: row.message,
+        message_for_sender: row.message_for_sender,
         created_at: row.created_at,
       };
     } catch (error) {
@@ -92,6 +96,7 @@ export const ChatRepository = {
           from_user_id: chat.from_user_id,
           to_user_id: chat.to_user_id,
           message: chat.message,
+          message_for_sender: chat.message_for_sender,
           created_at: chat.created_at,
         })
         .from(chat)

@@ -3,6 +3,9 @@ import { AuthAPISchema } from "@/schemas/auth.schema";
 import { NonceStoreRepository } from "@/repository/nonce_store.repo";
 import { UserRepository } from "@/repository/app_user.repo";
 import { generateJwt } from "@/lib/jwt";
+import {
+  verifySignature
+} from "@/lib/elliptic-curve";
 
 export const AuthHandler = {
   async challenge(req: Request, res: Response) {
@@ -28,19 +31,20 @@ export const AuthHandler = {
       const parsed = AuthAPISchema.login.req.parse(req.body);
       const { username, nonce_id, signed_nonce } = parsed;
 
+      // ambil data user
       const app_user = await UserRepository.getByUsername(username);
       if (!app_user) {
         return res.status(401).json({ error: "Invalid username or password" });
       }
 
+      // ambil nonce dari db
       const stored_nonce = await NonceStoreRepository.get(username, nonce_id);
       if (!stored_nonce) {
         return res.status(401).json({ error: "Invalid username or password" });
       }
 
-      // perlu cek timestamp nonce juga
-
-      const verified = true; // verifySignature(username, stored_nonce, signed_nonce);
+      // TODO: perlu cek timestamp nonce juga (biar lebih aman kata rafi)
+      const verified = verifySignature(app_user.public_key, stored_nonce, signed_nonce)
       if (!verified) {
         return res.status(401).json({ error: "Invalid username or password" });
       }

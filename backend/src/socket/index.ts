@@ -69,6 +69,7 @@ export function initSocket(server: HttpServer) {
         data.from_user_id,
         data.to_user_id,
         data.message,
+        data.message_for_sender,
         data.room_id
       );
 
