@@ -9,7 +9,7 @@ import {
 export const app_user = pgTable("app_user", {
   id: serial("id").primaryKey().notNull(),
   username: varchar("username", { length: 32 }).notNull().unique(),
-  public_key: varchar("public_key", { length: 64 }).notNull(),
+  public_key: varchar("public_key", { length: 512 }).notNull(),
   created_at: timestamp("created_at", {
     withTimezone: true,
     mode: "date",

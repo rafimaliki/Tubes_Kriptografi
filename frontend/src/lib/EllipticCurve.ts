@@ -27,21 +27,22 @@ export function hashMessage(
 export function signMessage(
   privateKeyHex: string,
   messageHash: string // hex string
-): { r: string; s: string } {
+): string {
   const key = ec.keyFromPrivate(privateKeyHex);
   const signature = key.sign(messageHash);
-  return {
+  return JSON.stringify({
     r: signature.r.toString('hex'),
     s: signature.s.toString('hex'),
-  };
+  });
 }
 
 export function verifySignature(
   publicKeyHex: string,
   messageHash: string,
-  signature: { r: string; s: string }
+  signatureJson: string
 ): boolean {
   try {
+    const signature = JSON.parse(signatureJson);
     const key = ec.keyFromPublic(publicKeyHex, 'hex');
     return key.verify(messageHash, signature);
   } catch (error) {

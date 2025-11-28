@@ -42,8 +42,8 @@ export const AuthAPISchema = {
           example: 12345,
         }),
         signed_nonce: z.string().openapi({
-          description: "Signed nonce for verification",
-          example: "signed-nonce-string",
+          description: "JSON stringified ECDSA signature {r, s}",
+          example: '{"r":"a1b2c3d4...","s":"e5f6g7h8..."}',
         }),
       })
       .openapi({
