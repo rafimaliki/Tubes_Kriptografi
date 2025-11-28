@@ -3,6 +3,8 @@ import { io, Socket } from "socket.io-client";
 import type { User } from "./auth.store";
 import { UserAPI } from "@/api/user.api";
 import { ChatAPI } from "@/api/chat.api";
+import { SessionStorage } from "@/lib/SessionStorage";
+import { LocalStorage } from "@/lib/LocalStorage";
 import {
   hashMessage,
   signMessage,
@@ -67,6 +69,7 @@ type State = {
   // data chat
   currentUser: User | null;
   chats: Chat[];
+  lastSentMessage?: string;
   getChats: () => Promise<Chat[]>;
   getOrCreateChatWith: (otherUsername: string) => Promise<Chat>;
   loadChat: (room_id: number) => Promise<void>;
@@ -127,7 +130,16 @@ export const useChatStore = create<State>((set, get) => ({
       console.log("new_message dari server:", payload);
       const newMessage: Message = payload.chat as Message;
 
-      // create decryption here
+      // dapatkan private key
+      const privateKey = LocalStorage.load("private_key");
+      if (!privateKey || typeof privateKey !== "string") {
+        console.error("Private key not found in localStorage");
+        return;
+      }
+
+      // decrypt pesan
+      const decryptedMessage = decryptMessage(privateKey, newMessage.message);
+      newMessage.message = decryptedMessage;
 
       set((state) => {
         let updatedChat: Chat | null = null;
@@ -198,11 +210,13 @@ export const useChatStore = create<State>((set, get) => ({
       to_user_id,
       message: ciphertext      
     };
+    set(() => ({ lastSentMessage: message }));
 
     s.socket.emit("new_message", chat, (response) => {
       console.log("Response dari server untuk new_message:", response);
 
       const newMessage: Message = response.chat as Message;
+      newMessage.message = get().lastSentMessage || "mana"; // gunakan pesan asli yang belum dienkripsi untuk ditampilkan
 
       set((state) => {
         let updatedChat: Chat | null = null;

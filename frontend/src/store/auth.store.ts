@@ -7,6 +7,7 @@ import type {
 } from "@/types/ApiResult";
 import { Base64 } from "@/lib/Base64";
 import { LocalStorage } from "@/lib/LocalStorage";
+import { SessionStorage } from "@/lib/SessionStorage";
 import {
   generateKeyPair,
   signMessage
@@ -73,6 +74,9 @@ export const useAuthStore = create<AuthStore>((set) => ({
       set({ currentUser: user });
       LocalStorage.save(LOCAL_STORAGE_KEY, user);
 
+      // 7) save private key di localstorage
+      LocalStorage.save(`private_key`, privateKey);
+
       return login_res;
     } catch (err) {
       return { ok: false, error: "Unexpected error during login" };
@@ -98,6 +102,6 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
   logout: () => {
     set({ currentUser: null });
-    LocalStorage.save(LOCAL_STORAGE_KEY, null);
+    LocalStorage.deleteAll();
   },
 }));
