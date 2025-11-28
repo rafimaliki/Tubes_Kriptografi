@@ -4,6 +4,7 @@ import { JwtMiddleware } from "@/middlewares/jwt.middleware";
 
 const router = Router();
 
+router.get("/id/:id", JwtMiddleware, UserHandler.getUserById);
 router.get("/:username", JwtMiddleware, UserHandler.getUser);
 
 export default router;

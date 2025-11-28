@@ -3,16 +3,17 @@ import { app_user, chat, chat_room } from "@/repo/schema";
 import dotenv from "dotenv";
 import crypto from "crypto";
 import { ChatRoomRepository } from "@/repository/chat_room.repo";
+import { generateKeyPair } from "@/lib/elliptic-curve";
 dotenv.config();
 
 async function seedUsers() {
   const num_users = 10;
 
   const users = Array.from({ length: num_users }, (_, i) => {
-    const random_key = crypto.randomBytes(32).toString("hex");
+    const { publicKey } = generateKeyPair("password1");
     return {
       username: `user${i + 1}`,
-      public_key: random_key,
+      public_key: publicKey,
     };
   });
 
