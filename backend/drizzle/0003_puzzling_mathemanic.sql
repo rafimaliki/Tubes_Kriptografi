@@ -1,0 +1,1 @@
+ALTER TABLE "app_user" ALTER COLUMN "public_key" SET DATA TYPE varchar(512);
