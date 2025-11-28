@@ -83,9 +83,15 @@ export function decryptMessage(privateKeyHex: string, encryptedData: string): st
       CryptoJS.enc.Utf8
     );
     
+    // If decryption results in empty string, return the ciphertext instead
+    if (!decrypted || decrypted.trim() === '') {
+      console.error('Decryption resulted in empty string, returning ciphertext');
+      return encryptedData;
+    }
+    
     return decrypted;
   } catch (error) {
     console.error('Decryption failed:', error);
-    return '';
+    return encryptedData;
   }
 }

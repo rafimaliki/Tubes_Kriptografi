@@ -76,6 +76,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
       // 7) save private key dan public key di localstorage
       LocalStorage.save(`private_key`, privateKey);
+      LocalStorage.save('original_private_key', privateKey);
       LocalStorage.save(`public_key`, publicKey);
 
       return login_res;

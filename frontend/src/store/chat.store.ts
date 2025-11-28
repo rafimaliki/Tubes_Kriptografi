@@ -146,8 +146,13 @@ export const useChatStore = create<State>((set, get) => ({
         : newMessage.message;
 
       // decrypt pesan
-      const decryptedMessage = decryptMessage(privateKey, messageToDecrypt);
-      newMessage.message = decryptedMessage;
+      try {
+        const decryptedMessage = decryptMessage(privateKey, messageToDecrypt);
+        newMessage.message = decryptedMessage;
+      } catch (error) {
+        console.error('Failed to decrypt incoming message:', error);
+        newMessage.message = messageToDecrypt;
+      }
 
       set((state) => {
         let updatedChat: Chat | null = null;
@@ -374,11 +379,19 @@ export const useChatStore = create<State>((set, get) => ({
           ? msg.message_for_sender 
           : msg.message;
         
-        const decryptedMessage = decryptMessage(privateKey, messageToDecrypt);
-        return {
-          ...msg,
-          message: decryptedMessage,
-        };
+        try {
+          const decryptedMessage = decryptMessage(privateKey, messageToDecrypt);
+          return {
+            ...msg,
+            message: decryptedMessage,
+          };
+        } catch (error) {
+          console.error('Failed to decrypt message:', error);
+          return {
+            ...msg,
+            message: messageToDecrypt,
+          };
+        }
       });
 
       // tampilkan
