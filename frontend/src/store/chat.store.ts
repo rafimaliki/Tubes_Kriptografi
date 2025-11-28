@@ -40,6 +40,7 @@ export interface Message {
   to_user_id: number;
   room_id: number;
   message: string;
+  message_for_sender: string;
   created_at: string; // timestamp
   // signature: string;
 }
@@ -137,8 +138,15 @@ export const useChatStore = create<State>((set, get) => ({
         return;
       }
 
+      const currentUserId = get().currentUser?.id;
+
+      // gunakan message_for_sender jika pesan dikirim oleh user saat ini
+      const messageToDecrypt = newMessage.from_user_id === currentUserId 
+        ? newMessage.message_for_sender 
+        : newMessage.message;
+
       // decrypt pesan
-      const decryptedMessage = decryptMessage(privateKey, newMessage.message);
+      const decryptedMessage = decryptMessage(privateKey, messageToDecrypt);
       newMessage.message = decryptedMessage;
 
       set((state) => {
@@ -204,14 +212,24 @@ export const useChatStore = create<State>((set, get) => ({
     console.log("Public key:", receiver.data.public_key);
     const ciphertext = encryptMessage(receiver.data.public_key, message);
 
+    // lakukan enkripsi pesan menggunakan public key sender (agar sender bisa baca juga)
+    const senderPublicKey = LocalStorage.load("public_key");
+    if (!senderPublicKey || typeof senderPublicKey !== "string") {
+      console.error("Sender public key not found in localStorage");
+      return;
+    }
+    const ciphertextForSender = encryptMessage(senderPublicKey, message);
+
     const chat = {
       room_id,
       from_user_id,
       to_user_id,
-      message: ciphertext      
+      message: ciphertext,
+      message_for_sender: ciphertextForSender
     };
     set(() => ({ lastSentMessage: message }));
 
+    // kirim
     s.socket.emit("new_message", chat, (response) => {
       console.log("Response dari server untuk new_message:", response);
 
@@ -339,7 +357,31 @@ export const useChatStore = create<State>((set, get) => ({
     }
 
     const res = await ChatAPI.getMessagess(user_1, user_2);
+    
     if (res.ok) {
+      // dekripsi semua pesan dari server
+      const privateKey = LocalStorage.load("private_key");
+      if (!privateKey || typeof privateKey !== "string") {
+        console.error("Private key not found in localStorage");
+        return;
+      }
+
+      const currentUserId = get().currentUser?.id;
+
+      res.data = res.data.map((msg) => {
+        // gunakan message_for_sender jika pesan dikirim oleh user saat ini
+        const messageToDecrypt = msg.from_user_id === currentUserId 
+          ? msg.message_for_sender 
+          : msg.message;
+        
+        const decryptedMessage = decryptMessage(privateKey, messageToDecrypt);
+        return {
+          ...msg,
+          message: decryptedMessage,
+        };
+      });
+
+      // tampilkan
       set((state) => ({
         chats: state.chats.map((c) => {
           if (c.room_id === room_id) {

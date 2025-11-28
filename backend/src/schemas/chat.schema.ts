@@ -20,6 +20,10 @@ export const messagesSchema = z.array(
       description: "Content of the chat message",
       example: "Hello, how are you?",
     }),
+    message_for_sender: z.string().openapi({
+      description: "Content of the chat message for the sender",
+      example: "Hello, how are you?",
+    }),
     room_id: z.number().openapi({
       description: "ID of the chat room",
       example: 2001,
