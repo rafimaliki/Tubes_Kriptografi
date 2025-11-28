@@ -22,7 +22,7 @@ export const nonce_store = pgTable("nonce_store", {
   id: serial("id").primaryKey().notNull(),
   username: varchar("username", { length: 32 }).notNull(),
   nonce: varchar("nonce", { length: 64 }).notNull(),
-  created_at: timestamp("timestamp", {
+  created_at: timestamp("created_at", {
     withTimezone: true,
     mode: "date",
   })
