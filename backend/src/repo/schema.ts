@@ -4,6 +4,7 @@ import {
   varchar,
   timestamp,
   integer,
+  text,
 } from "drizzle-orm/pg-core";
 
 export const app_user = pgTable("app_user", {
@@ -51,7 +52,7 @@ export const chat = pgTable("chat", {
     }),
   from_user_id: serial("from_user_id").notNull(),
   to_user_id: serial("to_user_id").notNull(),
-  message: varchar("message", { length: 1024 }).notNull(),
+  message: text("message").notNull(),
   created_at: timestamp("created_at", {
     withTimezone: true,
     mode: "date",
