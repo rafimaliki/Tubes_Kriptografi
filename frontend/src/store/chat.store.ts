@@ -10,7 +10,7 @@ import {
   signMessage,
   verifySignature,
   encryptMessage,
-  decryptMessage
+  decryptMessage,
 } from "@/lib/EllipticCurve";
 
 const SOCKET_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
@@ -141,16 +141,17 @@ export const useChatStore = create<State>((set, get) => ({
       const currentUserId = get().currentUser?.id;
 
       // gunakan message_for_sender jika pesan dikirim oleh user saat ini
-      const messageToDecrypt = newMessage.from_user_id === currentUserId 
-        ? newMessage.message_for_sender 
-        : newMessage.message;
+      const messageToDecrypt =
+        newMessage.from_user_id === currentUserId
+          ? newMessage.message_for_sender
+          : newMessage.message;
 
       // decrypt pesan
       try {
         const decryptedMessage = decryptMessage(privateKey, messageToDecrypt);
         newMessage.message = decryptedMessage;
       } catch (error) {
-        console.error('Failed to decrypt incoming message:', error);
+        console.error("Failed to decrypt incoming message:", error);
         newMessage.message = messageToDecrypt;
       }
 
@@ -230,7 +231,7 @@ export const useChatStore = create<State>((set, get) => ({
       from_user_id,
       to_user_id,
       message: ciphertext,
-      message_for_sender: ciphertextForSender
+      message_for_sender: ciphertextForSender,
     };
     set(() => ({ lastSentMessage: message }));
 
@@ -303,6 +304,25 @@ export const useChatStore = create<State>((set, get) => ({
     const res = await ChatAPI.getRecents();
     if (res.ok) {
       const normalizedChats = res.data.map((chat) => {
+        const message = chat.last_message;
+        const private_key = LocalStorage.load("private_key");
+        if (private_key && typeof private_key === "string" && message) {
+          const currentUserId = get().currentUser?.id;
+          const messageToDecrypt =
+            message.from_user_id === currentUserId
+              ? message.message_for_sender
+              : message.message;
+          try {
+            const decryptedMessage = decryptMessage(
+              private_key,
+              messageToDecrypt
+            );
+            message.message = decryptedMessage;
+          } catch (error) {
+            console.error("Failed to decrypt last message:", error);
+            message.message = messageToDecrypt;
+          }
+        }
         return {
           room_id: chat.room_id,
           participants: chat.participants,
@@ -362,7 +382,7 @@ export const useChatStore = create<State>((set, get) => ({
     }
 
     const res = await ChatAPI.getMessagess(user_1, user_2);
-    
+
     if (res.ok) {
       // dekripsi semua pesan dari server
       const privateKey = LocalStorage.load("private_key");
@@ -375,10 +395,11 @@ export const useChatStore = create<State>((set, get) => ({
 
       res.data = res.data.map((msg) => {
         // gunakan message_for_sender jika pesan dikirim oleh user saat ini
-        const messageToDecrypt = msg.from_user_id === currentUserId 
-          ? msg.message_for_sender 
-          : msg.message;
-        
+        const messageToDecrypt =
+          msg.from_user_id === currentUserId
+            ? msg.message_for_sender
+            : msg.message;
+
         try {
           const decryptedMessage = decryptMessage(privateKey, messageToDecrypt);
           return {
@@ -386,7 +407,7 @@ export const useChatStore = create<State>((set, get) => ({
             message: decryptedMessage,
           };
         } catch (error) {
-          console.error('Failed to decrypt message:', error);
+          console.error("Failed to decrypt message:", error);
           return {
             ...msg,
             message: messageToDecrypt,
