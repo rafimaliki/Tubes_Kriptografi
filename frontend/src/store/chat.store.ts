@@ -17,7 +17,7 @@ const SOCKET_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 export interface ClientToServerEvents {
   new_message: (
-    payload: Omit<Message, "id" | "created_at">,
+    payload: Omit<Message, "id" | "isVerified">,
     callback: (response: { chat: Message }) => void
   ) => void;
   create_chat_room: (
@@ -42,7 +42,8 @@ export interface Message {
   message: string;
   message_for_sender: string;
   created_at: string; // timestamp
-  // signature: string;
+  signature: string;
+  isVerified: boolean;
 }
 
 export interface Chat {
@@ -127,7 +128,7 @@ export const useChatStore = create<State>((set, get) => ({
     });
 
     // event handler dari server
-    socket.on("new_message", (payload) => {
+    socket.on("new_message", async (payload) => {
       console.log("new_message dari server:", payload);
       const newMessage: Message = payload.chat as Message;
 
@@ -147,12 +148,40 @@ export const useChatStore = create<State>((set, get) => ({
           : newMessage.message;
 
       // decrypt pesan
+      const encryptedMessage = messageToDecrypt;
       try {
         const decryptedMessage = decryptMessage(privateKey, messageToDecrypt);
         newMessage.message = decryptedMessage;
       } catch (error) {
         console.error("Failed to decrypt incoming message:", error);
         newMessage.message = messageToDecrypt;
+      }
+
+      // hash pesan
+      const sender = await UserAPI.getById(newMessage.from_user_id);
+      const receiver = await UserAPI.getById(newMessage.to_user_id);
+      const senderUsername = sender.ok ? sender.data.username : "";
+      const receiverUsername = receiver.ok ? receiver.data.username : "";
+      const messageHash = hashMessage(
+        newMessage.message,
+        newMessage.created_at,
+        senderUsername,
+        receiverUsername
+      );
+      console.log("Incoming Message Hash:", messageHash);
+      console.log("message: ", newMessage.message);
+      console.log("senderUsername: ", senderUsername);
+      console.log("receiverUsername: ", receiverUsername);
+      console.log("timestamp: ", newMessage.created_at);
+
+      // verifikasi signature
+      const senderPublicKey = sender.ok ? sender.data.public_key : "";
+      const isVerified = verifySignature(senderPublicKey, messageHash, newMessage.signature);
+      newMessage.isVerified = isVerified;
+
+      // tampilkan ciphertext jika verifikasi gagal
+      if (!isVerified) {
+        newMessage.message = encryptedMessage;
       }
 
       set((state) => {
@@ -214,6 +243,26 @@ export const useChatStore = create<State>((set, get) => ({
       return;
     }
 
+    // hash pesan
+    const timestamp = new Date().toISOString();
+    const timestampForHash = timestamp.replace(/\.\d{3}Z$/, ".000Z");
+    const senderUsername = s.currentUser?.username || "";
+    const receiverUsername = receiver.data.username;
+    const messageHash = hashMessage(
+      message,
+      timestampForHash,
+      senderUsername,
+      receiverUsername
+    );
+    
+    // sign pesan
+    const privateKey = LocalStorage.load("private_key");
+    if (!privateKey || typeof privateKey !== "string") {
+      console.error("Private key not found in localStorage");
+      return;
+    }
+    const signature = signMessage(privateKey, messageHash);
+
     // lakukan enkripsi pesan
     console.log("Public key:", receiver.data.public_key);
     const ciphertext = encryptMessage(receiver.data.public_key, message);
@@ -227,20 +276,46 @@ export const useChatStore = create<State>((set, get) => ({
     const ciphertextForSender = encryptMessage(senderPublicKey, message);
 
     const chat = {
-      room_id,
       from_user_id,
       to_user_id,
+      room_id,
       message: ciphertext,
       message_for_sender: ciphertextForSender,
+      created_at: timestamp,
+      signature: signature,
     };
     set(() => ({ lastSentMessage: message }));
 
     // kirim
-    s.socket.emit("new_message", chat, (response) => {
+    s.socket.emit("new_message", chat, async (response) => {
       console.log("Response dari server untuk new_message:", response);
 
       const newMessage: Message = response.chat as Message;
       newMessage.message = get().lastSentMessage || "mana"; // gunakan pesan asli yang belum dienkripsi untuk ditampilkan
+
+      // dapatkan sender dan receiver username
+      const sender = await UserAPI.getById(newMessage.from_user_id);
+      const receiver = await UserAPI.getById(newMessage.to_user_id);
+      const senderUsername = sender.ok ? sender.data.username : "";
+      const receiverUsername = receiver.ok ? receiver.data.username : "";
+
+      // hash pesan
+      const messageHash = hashMessage(
+        newMessage.message,
+        newMessage.created_at,
+        senderUsername,
+        receiverUsername
+      );
+
+      // verifikasi signature
+      const publicKey = s.currentUser?.public_key || "";
+      const isVerified = verifySignature(publicKey, messageHash, newMessage.signature);
+      newMessage.isVerified = isVerified;
+
+      // tampilkan ciphertext jika verifikasi gagal
+      if (!isVerified) {
+        newMessage.message = newMessage.message;
+      }
 
       set((state) => {
         let updatedChat: Chat | null = null;
@@ -393,27 +468,67 @@ export const useChatStore = create<State>((set, get) => ({
 
       const currentUserId = get().currentUser?.id;
 
-      res.data = res.data.map((msg) => {
-        // gunakan message_for_sender jika pesan dikirim oleh user saat ini
-        const messageToDecrypt =
-          msg.from_user_id === currentUserId
-            ? msg.message_for_sender
-            : msg.message;
+      // decrypt dan verify setiap pesan
+      const processedMessages = await Promise.all(
+        res.data.map(async (msg) => {
+          // gunakan message_for_sender jika pesan dikirim oleh user saat ini
+          const messageToDecrypt =
+            msg.from_user_id === currentUserId
+              ? msg.message_for_sender
+              : msg.message;
 
-        try {
-          const decryptedMessage = decryptMessage(privateKey, messageToDecrypt);
-          return {
-            ...msg,
-            message: decryptedMessage,
-          };
-        } catch (error) {
-          console.error("Failed to decrypt message:", error);
-          return {
-            ...msg,
-            message: messageToDecrypt,
-          };
-        }
-      });
+          try {
+            // decrypt pesan
+            const decryptedMessage = decryptMessage(privateKey, messageToDecrypt);
+
+            // dapatkan sender dan receiver username
+            const sender = await UserAPI.getById(msg.from_user_id);
+            const receiver = await UserAPI.getById(msg.to_user_id);
+            const senderUsername = sender.ok ? sender.data.username : "";
+            const receiverUsername = receiver.ok ? receiver.data.username : "";
+
+            // hash pesan
+            const messageHash = hashMessage(
+              decryptedMessage,
+              msg.created_at,
+              senderUsername,
+              receiverUsername
+            );
+
+            // verifikasi signature 
+            const senderPublicKey = sender.ok ? sender.data.public_key : "";
+            const isVerified = verifySignature(
+              senderPublicKey,
+              messageHash,
+              msg.signature
+            );
+
+            // tampilkan ciphertext jika verifikasi gagal
+            const messageShown = isVerified ? decryptedMessage : messageToDecrypt;
+
+            // console.log("isVerified:", isVerified);
+            // console.log("Decrypted Message:", decryptedMessage);
+            // console.log("message: ", decryptedMessage);
+            // console.log("senderUsername: ", senderUsername);
+            // console.log("receiverUsername: ", receiverUsername);
+            // console.log("timestamp: ", msg.created_at);
+            
+            return {
+              ...msg,
+              message: messageShown,
+              isVerified: isVerified,
+            };
+          } catch (error) {
+            console.error("Failed to decrypt message:", error);
+            return {
+              ...msg,
+              message: messageToDecrypt,
+            };
+          }
+        })
+      );
+
+      // console.log("Loaded chat messages:", processedMessages);
 
       // tampilkan
       set((state) => ({
@@ -421,7 +536,7 @@ export const useChatStore = create<State>((set, get) => ({
           if (c.room_id === room_id) {
             return {
               ...c,
-              messages: res.data,
+              messages: processedMessages,
               loaded: true,
             };
           }

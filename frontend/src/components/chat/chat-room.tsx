@@ -48,8 +48,7 @@ export default function ChatRoom({
 
   return (
     <div
-      className="flex-1 flex flex-col bg-white relative"
-      style={{ height: "var(--vh, 100vh)" }}
+      className="flex-1 flex flex-col bg-white relative h-full"
     >
       {/* Header */}
       <div className="p-4 border-b border-gray-200 flex items-center gap-3 flex-shrink-0">
@@ -109,16 +108,40 @@ export default function ChatRoom({
                     }`}
                   >
                     <p className="break-words">{message.message}</p>
-                    <p
-                      className={`text-xs mt-1 ${
-                        isCurrentUser ? "text-blue-100" : "text-gray-500"
-                      }`}
-                    >
-                      {new Date(message.created_at).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
+                    {!message.isVerified && (
+                      <p
+                        className={`text-xs italic mt-1 ${
+                          isCurrentUser ? "text-red-200" : "text-red-500"
+                        }`}
+                      >
+                        Message shown is unencrypted because its digital signature cannot be verified.
+                      </p>
+                    )}
+                    <div className="flex flex-row items-center justify-between gap-2 mt-1">
+                      <p
+                        className={`text-xs ${
+                          isCurrentUser ? "text-blue-100" : "text-gray-500"
+                        }`}
+                      >
+                        {new Date(message.created_at).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                      <p
+                        className={`text-sm font-medium ${
+                          message.isVerified
+                            ? isCurrentUser
+                              ? "text-green-200"
+                              : "text-green-600"
+                            : isCurrentUser
+                              ? "text-red-200"
+                              : "text-red-600"
+                        }`}
+                      >
+                        {message.isVerified ? "✅ Verified" : "❌ Unverified"}
+                      </p>
+                    </div>
                   </div>
                 </div>
               );

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { ChatAPISchema } from "@/schemas/chat.schema";
 import { ChatRepository } from "@/repository/chat.repo";
+import { UserRepository } from "@/repository/app_user.repo";
 
 export const ChatHandler = {
   async getMessages(req: Request, res: Response) {
@@ -15,11 +16,18 @@ export const ChatHandler = {
           .json({ error: "Forbidden - You can only access your own chats" });
       }
 
+      // dapatkan messages
       const messages = await ChatRepository.getMessagesBetweenUsers(
         user1_id,
         user2_id
       );
-      res.status(200).json(messages);
+
+      // enrich messages dengan username dan isVerified
+      const enriched_messages = messages.map((msg) => ({
+        ...msg,
+        isVerified: true, // placeholder, verifikasi sebenarnya dilakukan di tempat lain
+      }));
+      res.status(200).json(enriched_messages);
     } catch (error) {
       res.status(400).json({ error });
     }

@@ -43,6 +43,13 @@
       "when": 1764322413832,
       "tag": "0005_nice_cerise",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1764392472866,
+      "tag": "0006_light_kulan_gath",
+      "breakpoints": true
     }
   ]
 }
