@@ -65,25 +65,34 @@ export function initSocket(server: HttpServer) {
 
     // event dari client
     socket.on("new_message", async (data, callback) => {
+      // buat chat baru di database
       const new_chat = await ChatRepository.create(
         data.from_user_id,
         data.to_user_id,
         data.message,
         data.message_for_sender,
-        data.room_id
+        data.signature,
+        data.created_at,
+        data.room_id,
       );
 
       console.log("[socket] new_chat created:", new_chat);
 
-      // perlu handler error disini
-      callback({ chat: new_chat });
+      // tambahkan atribut lain yang perlu dikirim ke client
+      const enriched_chat = {
+        ...new_chat,
+        isVerified: true, // placeholder, nanti dicek di client
+      }
 
+      // perlu handler error disini
+      callback({ chat: enriched_chat });
+      
       // broadcast ke penerima
       const to_user_id = data.to_user_id;
       const to_socket_id = userSocketMap.get(to_user_id);
 
       if (to_socket_id) {
-        io?.to(to_socket_id).emit("new_message", { chat: new_chat });
+        io?.to(to_socket_id).emit("new_message", { chat: enriched_chat });
         console.log(
           `[socket] new_message emitted to userId=${to_user_id} at socketId=${to_socket_id}`
         );

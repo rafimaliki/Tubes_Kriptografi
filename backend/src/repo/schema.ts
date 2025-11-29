@@ -54,6 +54,7 @@ export const chat = pgTable("chat", {
   to_user_id: serial("to_user_id").notNull(),
   message: text("message").notNull(),
   message_for_sender: text("message_for_sender").notNull(),
+  signature: varchar("signature", { length: 768 }).notNull(),
   created_at: timestamp("created_at", {
     withTimezone: true,
     mode: "date",

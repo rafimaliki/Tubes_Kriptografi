@@ -16,6 +16,10 @@ export const messagesSchema = z.array(
       description: "ID of the user who received the message",
       example: 2,
     }),
+    room_id: z.number().openapi({
+      description: "ID of the chat room",
+      example: 2001,
+    }),
     message: z.string().openapi({
       description: "Content of the chat message",
       example: "Hello, how are you?",
@@ -24,13 +28,18 @@ export const messagesSchema = z.array(
       description: "Content of the chat message for the sender",
       example: "Hello, how are you?",
     }),
-    room_id: z.number().openapi({
-      description: "ID of the chat room",
-      example: 2001,
-    }),
     created_at: z.string().openapi({
       description: "Timestamp of when the message was sent",
       example: "2024-10-01T12:34:56Z",
+    }),
+    signature: z.string().openapi({
+      description: "Digital signature of the message",
+      example:
+        '{"r":"5f1d7e8c9a3b4c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d","s":"1a2b3c4d5e6f7a8b9c0d5f1d7e8c9a3b4c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f"}',
+    }),
+    isVerified: z.boolean().openapi({
+      description: "Indicates if the message signature has been verified",
+      example: true,
     }),
   })
 );

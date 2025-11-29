@@ -5,9 +5,11 @@ export interface ClientToServerEvents {
     payload: {
       from_user_id: number;
       to_user_id: number;
+      room_id: number;
       message: string;
       message_for_sender: string;
-      room_id: number;
+      created_at: string; // timestamp
+      signature: string;
     },
     callback: (response: any) => void
   ) => void;

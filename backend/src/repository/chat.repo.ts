@@ -1,5 +1,5 @@
 import { db } from "@/repo/db";
-import { eq, and, or, sql, desc } from "drizzle-orm";
+import { eq, and, or, sql, desc, is } from "drizzle-orm";
 import { app_user, chat } from "@/repo/schema";
 import { ChatRoomRepository } from "./chat_room.repo";
 import { UserRepository } from "./app_user.repo";
@@ -10,6 +10,8 @@ export const ChatRepository = {
     to_user_id: number,
     message: string,
     message_for_sender: string,
+    signature: string,
+    created_at: string,
     room_id?: number
   ) {
     try {
@@ -27,6 +29,8 @@ export const ChatRepository = {
           to_user_id,
           message,
           message_for_sender,
+          signature,
+          created_at: new Date(created_at)
         })
         .returning({
           id: chat.id,
@@ -35,6 +39,7 @@ export const ChatRepository = {
           room_id: chat.room_id,
           message: chat.message,
           message_for_sender: chat.message_for_sender,
+          signature: chat.signature,
           created_at: chat.created_at,
         });
       return {
@@ -44,6 +49,7 @@ export const ChatRepository = {
         room_id: row.room_id,
         message: row.message,
         message_for_sender: row.message_for_sender,
+        signature: row.signature,
         created_at: row.created_at,
       };
     } catch (error) {
@@ -97,6 +103,7 @@ export const ChatRepository = {
           to_user_id: chat.to_user_id,
           message: chat.message,
           message_for_sender: chat.message_for_sender,
+          signature: chat.signature,
           created_at: chat.created_at,
         })
         .from(chat)
@@ -114,10 +121,16 @@ export const ChatRepository = {
 
           participants.push(user_1);
           participants.push(user_2);
+
+          // enrich row dengan atribut lain yang diperlukan
+          const enriched_row = {
+            ...row,
+            isVerified: true, // placeholder, nanti dicek di client
+          }
           return {
             room_id: row.room_id,
             participants: participants,
-            last_message: row,
+            last_message: enriched_row,
           };
         })
       );
