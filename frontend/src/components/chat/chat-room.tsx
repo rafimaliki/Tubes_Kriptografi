@@ -115,7 +115,7 @@ export default function ChatRoom({
                             isCurrentUser ? "text-red-200" : "text-red-500"
                           }`}
                         >
-                          Message shown is unencrypted because its digital
+                          The message is shown as encrypted because its digital
                           signature cannot be verified.
                         </p>
                       )}

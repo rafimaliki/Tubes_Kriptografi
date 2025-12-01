@@ -3,7 +3,6 @@ import { io, Socket } from "socket.io-client";
 import type { User } from "./auth.store";
 import { UserAPI } from "@/api/user.api";
 import { ChatAPI } from "@/api/chat.api";
-import { SessionStorage } from "@/lib/SessionStorage";
 import { LocalStorage } from "@/lib/LocalStorage";
 import {
   hashMessage,
@@ -303,7 +302,7 @@ export const useChatStore = create<State>((set, get) => ({
       // console.log("Response dari server untuk new_message:", response);
 
       const newMessage: Message = response.chat as Message;
-      newMessage.message = get().lastSentMessage || "mana"; // gunakan pesan asli yang belum dienkripsi untuk ditampilkan
+      newMessage.message = get().lastSentMessage || ""; // gunakan pesan asli yang belum dienkripsi untuk ditampilkan
 
       // dapatkan sender dan receiver username
       const sender = await UserAPI.getById(newMessage.from_user_id);
