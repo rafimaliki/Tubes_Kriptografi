@@ -109,17 +109,17 @@ export const useChatStore = create<State>((set, get) => ({
 
     // setup koneksi
     socket.on("connect", () => {
-      console.log("[socket] Connected to server");
+      // console.log("[socket] Connected to server");
       set(() => ({ connected: true, socketId: socket.id }));
     });
 
     socket.on("disconnect", (reason) => {
-      console.log("[socket] Disconnected:", reason);
+      // console.log("[socket] Disconnected:", reason);
       set(() => ({ connected: false, socketId: undefined }));
     });
 
     socket.on("connect_error", (error) => {
-      console.error("[socket] Connection error:", error);
+      // console.error("[socket] Connection error:", error);
       set(() => ({ connected: false, socketId: undefined }));
     });
 
@@ -129,7 +129,7 @@ export const useChatStore = create<State>((set, get) => ({
 
     // event handler dari server
     socket.on("new_message", async (payload) => {
-      console.log("new_message dari server:", payload);
+      // console.log("new_message dari server:", payload);
       const newMessage: Message = payload.chat as Message;
 
       // dapatkan private key
@@ -168,15 +168,19 @@ export const useChatStore = create<State>((set, get) => ({
         senderUsername,
         receiverUsername
       );
-      console.log("Incoming Message Hash:", messageHash);
-      console.log("message: ", newMessage.message);
-      console.log("senderUsername: ", senderUsername);
-      console.log("receiverUsername: ", receiverUsername);
-      console.log("timestamp: ", newMessage.created_at);
+      // console.log("Incoming Message Hash:", messageHash);
+      // console.log("message: ", newMessage.message);
+      // console.log("senderUsername: ", senderUsername);
+      // console.log("receiverUsername: ", receiverUsername);
+      // console.log("timestamp: ", newMessage.created_at);
 
       // verifikasi signature
       const senderPublicKey = sender.ok ? sender.data.public_key : "";
-      const isVerified = verifySignature(senderPublicKey, messageHash, newMessage.signature);
+      const isVerified = verifySignature(
+        senderPublicKey,
+        messageHash,
+        newMessage.signature
+      );
       newMessage.isVerified = isVerified;
 
       // tampilkan ciphertext jika verifikasi gagal
@@ -254,7 +258,7 @@ export const useChatStore = create<State>((set, get) => ({
       senderUsername,
       receiverUsername
     );
-    
+
     // sign pesan
     const privateKey = LocalStorage.load("private_key");
     if (!privateKey || typeof privateKey !== "string") {
@@ -264,7 +268,7 @@ export const useChatStore = create<State>((set, get) => ({
     const signature = signMessage(privateKey, messageHash);
 
     // lakukan enkripsi pesan
-    console.log("Public key:", receiver.data.public_key);
+    // console.log("Public key:", receiver.data.public_key);
     const ciphertext = encryptMessage(receiver.data.public_key, message);
 
     // lakukan enkripsi pesan menggunakan public key sender (agar sender bisa baca juga)
@@ -288,7 +292,7 @@ export const useChatStore = create<State>((set, get) => ({
 
     // kirim
     s.socket.emit("new_message", chat, async (response) => {
-      console.log("Response dari server untuk new_message:", response);
+      // console.log("Response dari server untuk new_message:", response);
 
       const newMessage: Message = response.chat as Message;
       newMessage.message = get().lastSentMessage || "mana"; // gunakan pesan asli yang belum dienkripsi untuk ditampilkan
@@ -309,7 +313,11 @@ export const useChatStore = create<State>((set, get) => ({
 
       // verifikasi signature
       const publicKey = s.currentUser?.public_key || "";
-      const isVerified = verifySignature(publicKey, messageHash, newMessage.signature);
+      const isVerified = verifySignature(
+        publicKey,
+        messageHash,
+        newMessage.signature
+      );
       newMessage.isVerified = isVerified;
 
       // tampilkan ciphertext jika verifikasi gagal
@@ -395,7 +403,8 @@ export const useChatStore = create<State>((set, get) => ({
             message.message = decryptedMessage;
           } catch (error) {
             console.error("Failed to decrypt last message:", error);
-            message.message = messageToDecrypt;
+            const encryptedMessage = JSON.parse(messageToDecrypt).encrypted;
+            message.message = encryptedMessage;
           }
         }
         return {
@@ -407,7 +416,7 @@ export const useChatStore = create<State>((set, get) => ({
         };
       });
 
-      console.log("recent_chat_list:", normalizedChats);
+      // console.log("recent_chat_list:", normalizedChats);
 
       set(() => ({ chats: normalizedChats }));
     } else {
@@ -479,7 +488,11 @@ export const useChatStore = create<State>((set, get) => ({
 
           try {
             // decrypt pesan
-            const decryptedMessage = decryptMessage(privateKey, messageToDecrypt);
+            const decryptedMessage = decryptMessage(
+              privateKey,
+              messageToDecrypt
+            );
+            const encryptedMessage = JSON.parse(messageToDecrypt).encrypted;
 
             // dapatkan sender dan receiver username
             const sender = await UserAPI.getById(msg.from_user_id);
@@ -495,7 +508,7 @@ export const useChatStore = create<State>((set, get) => ({
               receiverUsername
             );
 
-            // verifikasi signature 
+            // verifikasi signature
             const senderPublicKey = sender.ok ? sender.data.public_key : "";
             const isVerified = verifySignature(
               senderPublicKey,
@@ -504,7 +517,9 @@ export const useChatStore = create<State>((set, get) => ({
             );
 
             // tampilkan ciphertext jika verifikasi gagal
-            const messageShown = isVerified ? decryptedMessage : messageToDecrypt;
+            const messageShown = isVerified
+              ? decryptedMessage
+              : encryptedMessage;
 
             // console.log("isVerified:", isVerified);
             // console.log("Decrypted Message:", decryptedMessage);
@@ -512,7 +527,7 @@ export const useChatStore = create<State>((set, get) => ({
             // console.log("senderUsername: ", senderUsername);
             // console.log("receiverUsername: ", receiverUsername);
             // console.log("timestamp: ", msg.created_at);
-            
+
             return {
               ...msg,
               message: messageShown,

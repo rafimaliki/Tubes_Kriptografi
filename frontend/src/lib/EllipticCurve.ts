@@ -1,16 +1,19 @@
-import EC from 'elliptic';
-import CryptoJS from 'crypto-js';
-import SHA3 from 'js-sha3';
+import EC from "elliptic";
+import CryptoJS from "crypto-js";
+import SHA3 from "js-sha3";
 
-const ec = new EC.ec('p256'); // Elliptic Curve P-256 (secp256r1)
+const ec = new EC.ec("p256"); // Elliptic Curve P-256 (secp256r1)
 
-export function generateKeyPair(password: string):{ publicKey: string; privateKey: string } {
+export function generateKeyPair(password: string): {
+  publicKey: string;
+  privateKey: string;
+} {
   const seedHex = SHA3.sha3_256(password);
 
-  const key = ec.keyFromPrivate(seedHex, 'hex');  
+  const key = ec.keyFromPrivate(seedHex, "hex");
   return {
-    publicKey: key.getPublic('hex'),
-    privateKey: key.getPrivate('hex'),
+    publicKey: key.getPublic("hex"),
+    privateKey: key.getPrivate("hex"),
   };
 }
 
@@ -31,8 +34,8 @@ export function signMessage(
   const key = ec.keyFromPrivate(privateKeyHex);
   const signature = key.sign(messageHash);
   return JSON.stringify({
-    r: signature.r.toString('hex'),
-    s: signature.s.toString('hex'),
+    r: signature.r.toString("hex"),
+    s: signature.s.toString("hex"),
   });
 }
 
@@ -43,55 +46,60 @@ export function verifySignature(
 ): boolean {
   try {
     const signature = JSON.parse(signatureJson);
-    const key = ec.keyFromPublic(publicKeyHex, 'hex');
+    const key = ec.keyFromPublic(publicKeyHex, "hex");
     return key.verify(messageHash, signature);
   } catch (error) {
-    console.error('Signature verification failed:', error);
+    console.error("Signature verification failed:", error);
     return false;
   }
 }
 
-export function encryptMessage(publicKeyHex: string, plaintext: string): string {
-  const publicKey = ec.keyFromPublic(publicKeyHex, 'hex');
+export function encryptMessage(
+  publicKeyHex: string,
+  plaintext: string
+): string {
+  const publicKey = ec.keyFromPublic(publicKeyHex, "hex");
   const ephemeralKey = ec.genKeyPair();
-  
+
   const sharedSecret = ephemeralKey.derive(publicKey.getPublic());
-  
+
   const encryptionKey = SHA3.sha3_256(sharedSecret.toString());
-  
+
   const encrypted = CryptoJS.AES.encrypt(plaintext, encryptionKey).toString();
-  
-  const ephemeralPublicKey = ephemeralKey.getPublic('hex');
+
+  const ephemeralPublicKey = ephemeralKey.getPublic("hex");
   return JSON.stringify({
     ephemeralPublicKey,
     encrypted,
   });
 }
 
-export function decryptMessage(privateKeyHex: string, encryptedData: string): string {
+export function decryptMessage(
+  privateKeyHex: string,
+  encryptedData: string
+): string {
   try {
     const privateKey = ec.keyFromPrivate(privateKeyHex);
     const { ephemeralPublicKey, encrypted } = JSON.parse(encryptedData);
-    
-    const ephemeralKey = ec.keyFromPublic(ephemeralPublicKey, 'hex');
-    
+
+    const ephemeralKey = ec.keyFromPublic(ephemeralPublicKey, "hex");
+
     const sharedSecret = privateKey.derive(ephemeralKey.getPublic());
-    
+
     const decryptionKey = SHA3.sha3_256(sharedSecret.toString());
-    
+
     const decrypted = CryptoJS.AES.decrypt(encrypted, decryptionKey).toString(
       CryptoJS.enc.Utf8
     );
-    
-    // If decryption results in empty string, return the ciphertext instead
-    if (!decrypted || decrypted.trim() === '') {
-      console.error('Decryption resulted in empty string, returning ciphertext');
-      return encryptedData;
+
+    if (!decrypted || decrypted.trim() === "") {
+      const encrypted = JSON.parse(encryptedData).encrypted;
+      return encrypted;
     }
-    
+
     return decrypted;
   } catch (error) {
-    console.error('Decryption failed:', error);
-    return encryptedData;
+    const encrypted = JSON.parse(encryptedData).encrypted;
+    return encrypted;
   }
 }

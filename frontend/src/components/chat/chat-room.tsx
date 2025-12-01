@@ -46,10 +46,10 @@ export default function ChatRoom({
     }
   };
 
+  const isLoaded = chat.loaded;
+
   return (
-    <div
-      className="flex-1 flex flex-col bg-white relative h-full"
-    >
+    <div className="flex-1 flex flex-col bg-white relative h-full">
       {/* Header */}
       <div className="p-4 border-b border-gray-200 flex items-center gap-3 flex-shrink-0">
         {showBackButton && (
@@ -80,76 +80,83 @@ export default function ChatRoom({
       </div>
 
       {/* Messages */}
-      <div
-        className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0"
-        style={{ paddingBottom: "80px" }}
-      >
-        {chat.messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-gray-500">
-              No messages yet. Start the conversation!
-            </p>
-          </div>
-        ) : (
-          <>
-            {chat.messages.map((message) => {
-              const isCurrentUser =
-                message.from_user_id === Number(currentUser?.id);
-              return (
-                <div
-                  key={message.id}
-                  className={`flex ${isCurrentUser ? "justify-end" : "justify-start"}`}
-                >
+      {isLoaded ? (
+        <div
+          className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0"
+          style={{ paddingBottom: "80px" }}
+        >
+          {chat.messages.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-gray-500">
+                No messages yet. Start the conversation!
+              </p>
+            </div>
+          ) : (
+            <>
+              {chat.messages.map((message) => {
+                const isCurrentUser =
+                  message.from_user_id === Number(currentUser?.id);
+                return (
                   <div
-                    className={`max-w-xs px-4 py-2 rounded-2xl ${
-                      isCurrentUser
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-200 text-gray-900"
-                    }`}
+                    key={message.id}
+                    className={`flex ${isCurrentUser ? "justify-end" : "justify-start"}`}
                   >
-                    <p className="break-words">{message.message}</p>
-                    {!message.isVerified && (
-                      <p
-                        className={`text-xs italic mt-1 ${
-                          isCurrentUser ? "text-red-200" : "text-red-500"
-                        }`}
-                      >
-                        Message shown is unencrypted because its digital signature cannot be verified.
-                      </p>
-                    )}
-                    <div className="flex flex-row items-center justify-between gap-2 mt-1">
-                      <p
-                        className={`text-xs ${
-                          isCurrentUser ? "text-blue-100" : "text-gray-500"
-                        }`}
-                      >
-                        {new Date(message.created_at).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </p>
-                      <p
-                        className={`text-sm font-medium ${
-                          message.isVerified
-                            ? isCurrentUser
-                              ? "text-green-200"
-                              : "text-green-600"
-                            : isCurrentUser
-                              ? "text-red-200"
-                              : "text-red-600"
-                        }`}
-                      >
-                        {message.isVerified ? "✅ Verified" : "❌ Unverified"}
-                      </p>
+                    <div
+                      className={`max-w-xs px-4 py-2 rounded-2xl ${
+                        isCurrentUser
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-200 text-gray-900"
+                      }`}
+                    >
+                      <p className="break-words">{message.message}</p>
+                      {!message.isVerified && (
+                        <p
+                          className={`text-xs italic mt-1 ${
+                            isCurrentUser ? "text-red-200" : "text-red-500"
+                          }`}
+                        >
+                          Message shown is unencrypted because its digital
+                          signature cannot be verified.
+                        </p>
+                      )}
+                      <div className="flex flex-row items-center justify-between gap-2 mt-1">
+                        <p
+                          className={`text-xs ${
+                            isCurrentUser ? "text-blue-100" : "text-gray-500"
+                          }`}
+                        >
+                          {new Date(message.created_at).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                        <p
+                          className={`text-sm font-medium ${
+                            message.isVerified
+                              ? isCurrentUser
+                                ? "text-green-200"
+                                : "text-green-600"
+                              : isCurrentUser
+                                ? "text-red-200"
+                                : "text-red-600"
+                          }`}
+                        >
+                          {message.isVerified ? "✅ Verified" : "❌ Unverified"}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-            <div ref={messagesEndRef} />
-          </>
-        )}
-      </div>
+                );
+              })}
+              <div ref={messagesEndRef} />
+            </>
+          )}
+        </div>
+      ) : (
+        <div className="flex-1 flex items-center justify-center p-4">
+          <p className="text-gray-500">Loading messages...</p>
+        </div>
+      )}
 
       {/* Input */}
       <div className="fixed bottom-0 left-0 right-0 md:relative md:bottom-auto md:left-auto md:right-auto p-4 border-t border-gray-200 flex gap-2 items-end bg-white z-10">

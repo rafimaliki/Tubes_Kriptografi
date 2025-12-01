@@ -8,10 +8,7 @@ import type {
 import { Base64 } from "@/lib/Base64";
 import { LocalStorage } from "@/lib/LocalStorage";
 import { SessionStorage } from "@/lib/SessionStorage";
-import {
-  generateKeyPair,
-  signMessage
-} from "@/lib/EllipticCurve"
+import { generateKeyPair, signMessage } from "@/lib/EllipticCurve";
 
 export interface User {
   id: number;
@@ -76,7 +73,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
       // 7) save private key dan public key di localstorage
       LocalStorage.save(`private_key`, privateKey);
-      LocalStorage.save('original_private_key', privateKey);
+      LocalStorage.save("original_private_key", privateKey);
       LocalStorage.save(`public_key`, publicKey);
 
       return login_res;
@@ -93,7 +90,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
       // 2) kirim request register ke backend
       const register_res = await AuthAPI.register(username, publicKey);
 
-      console.log("Public Key:", publicKey);
+      // console.log("Public Key:", publicKey);
 
       return register_res;
     } catch (err) {
