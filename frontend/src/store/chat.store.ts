@@ -191,6 +191,14 @@ export const useChatStore = create<State>((set, get) => ({
       set((state) => {
         let updatedChat: Chat | null = null;
 
+        // cek dulu apakah ada chat dengan room_id ini
+        const chatExists = state.chats.some(
+          (c) => c.room_id === newMessage.room_id
+        );
+        if (!chatExists) {
+          window.location.reload();
+        }
+
         const remainingChats = state.chats.filter((c) => {
           if (c.room_id === newMessage.room_id) {
             updatedChat = {
