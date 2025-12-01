@@ -5,6 +5,8 @@
 Cryptalk is an end-to-end encrypted chat application for secure messaging. It leverages modern cryptographic techniques including encryption, hashing, and digital signatures to ensure privacy and data integrity for all users.
 
 **Production URL:** [http://135.235.216.233:3000/login](http://135.235.216.233:3000/login)
+<br>
+**Demo URL:** [https://youtu.be/8UilA1amcSk](https://youtu.be/8UilA1amcSk)
 
 ![App Screenshot](images/screenshot.png)
 
