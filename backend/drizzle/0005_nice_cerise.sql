@@ -1,1 +1,0 @@
-ALTER TABLE "chat" ADD COLUMN "message_for_sender" text NOT NULL;

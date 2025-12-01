@@ -1,1 +1,0 @@
-ALTER TABLE "nonce_store" RENAME COLUMN "timestamp" TO "created_at";

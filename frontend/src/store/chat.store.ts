@@ -185,7 +185,8 @@ export const useChatStore = create<State>((set, get) => ({
 
       // tampilkan ciphertext jika verifikasi gagal
       if (!isVerified) {
-        newMessage.message = encryptedMessage;
+        const encrypted = JSON.parse(encryptedMessage).encrypted;
+        newMessage.message = encrypted;
       }
 
       const chatExists = get().chats.some(
@@ -407,7 +408,32 @@ export const useChatStore = create<State>((set, get) => ({
               private_key,
               messageToDecrypt
             );
-            message.message = decryptedMessage;
+
+            //verify signature
+            const sender = chat.participants.find(
+              (p) => p.id === message.from_user_id
+            );
+            const receiver = chat.participants.find(
+              (p) => p.id === message.to_user_id
+            );
+            const senderUsername = sender ? sender.username : "";
+            const receiverUsername = receiver ? receiver.username : "";
+            const messageHash = hashMessage(
+              decryptedMessage,
+              message.created_at,
+              senderUsername,
+              receiverUsername
+            );
+            const senderPublicKey = sender ? sender.public_key : "";
+            const isVerified = verifySignature(
+              senderPublicKey,
+              messageHash,
+              message.signature
+            );
+            message.isVerified = isVerified;
+            message.message = isVerified
+              ? decryptedMessage
+              : JSON.parse(messageToDecrypt).encrypted;
           } catch (error) {
             console.error("Failed to decrypt last message:", error);
             const encryptedMessage = JSON.parse(messageToDecrypt).encrypted;

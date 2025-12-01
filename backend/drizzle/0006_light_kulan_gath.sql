@@ -1,1 +1,0 @@
-ALTER TABLE "chat" ADD COLUMN "signature" varchar(768) NOT NULL;
