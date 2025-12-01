@@ -1,10 +1,41 @@
-# Tubes_Kriptografi
+# Cryptalk
 
-Repositori Tugas Besar IF4020 Kriptografi
+> Tugas Besar IF4020 Kriptografi
 
-## 🚀 How to Run
+Cryptalk is an end-to-end encrypted chat application for secure messaging. It leverages modern cryptographic techniques including encryption, hashing, and digital signatures to ensure privacy and data integrity for all users.
 
-### Using Docker Compose (Recommended)
+**Production URL:** [http://135.235.216.233:3000/login](http://135.235.216.233:3000/login)
+
+---
+
+## Developers
+
+| Name                           | NIM      |
+| ------------------------------ | -------- |
+| Ahmad Rafi Maliki              | 13522137 |
+| Muhammad Dzaki Arta            | 13522149 |
+| Muhammad Rasheed Qais Tandjung | 13522158 |
+
+## Tech Overview
+
+| Category               | Technologies/Libraries                     |
+| ---------------------- | ------------------------------------------ |
+| Cryptography Libraries | crypto-js, elliptic, js-sha3, jsonwebtoken |
+| Backend                | Node.js (Express), Drizzle ORM, Socket.IO  |
+| Frontend               | React, Vite, Zustand                       |
+| Database               | PostgreSQL                                 |
+| Deployment             | AzureVM                                    |
+
+## How to Run Locally
+
+### Dependencies
+
+To run the application locally, you must have the following installed:
+| Dependency | Description |
+| ---------------- | ------------------------------------------------ |
+| Docker & Compose | Containerization |
+
+### Using Docker Compose
 
 1. **Start the application:**
 
@@ -14,30 +45,12 @@ Repositori Tugas Besar IF4020 Kriptografi
 
 2. **Seed the database (first time setup):**
    ```bash
-   docker-compose exec backend npm run db:seed
+   docker-compose exec -it backend npm run db:seed
    ```
 
-### Environment Configuration
-
-The application uses environment variables for configuration. Default values are set in `docker-compose.yml`, but you can also create local `.env` files:
-
-#### Backend Environment Variables
-
-Copy `backend/.env.example` to `backend/.env` and adjust as needed:
-
-- `PORT`: Backend server port (default: 3000)
-- `DATABASE_URL`: PostgreSQL connection string
-- `CLIENT_ORIGIN`: Frontend URL for CORS (default: http://localhost:3000)
-- `API_BASE_URL`: Backend API base URL (default: http://localhost:3001/api)
-
-#### Frontend Environment Variables
-
-Copy `frontend/.env.example` to `frontend/.env` and adjust as needed:
-
-- `VITE_BACKEND_URL`: Backend API URL for REST calls (default: http://localhost:3001/api/)
-- `VITE_API_URL`: Backend base URL for Socket.IO connections (default: http://localhost:3001)
-
-## 🌐 How to Access
+### How to Access
 
 - **Frontend**: [http://localhost:3000](http://localhost:3000) - Main application
 - **Backend API**: [http://localhost:3001](http://localhost:3001) - REST API endpoints
+
+## Developers
