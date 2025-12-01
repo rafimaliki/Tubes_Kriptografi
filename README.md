@@ -6,15 +6,9 @@ Cryptalk is an end-to-end encrypted chat application for secure messaging. It le
 
 **Production URL:** [http://135.235.216.233:3000/login](http://135.235.216.233:3000/login)
 
+![App Screenshot](images/screenshot.png)
+
 ---
-
-## Developers
-
-| Name                           | NIM      |
-| ------------------------------ | -------- |
-| Ahmad Rafi Maliki              | 13522137 |
-| Muhammad Dzaki Arta            | 13522149 |
-| Muhammad Rasheed Qais Tandjung | 13522158 |
 
 ## Tech Overview
 
@@ -54,3 +48,9 @@ To run the application locally, you must have the following installed:
 - **Backend API**: [http://localhost:3001](http://localhost:3001) - REST API endpoints
 
 ## Developers
+
+| Name                           | NIM      |
+| ------------------------------ | -------- |
+| Ahmad Rafi Maliki              | 13522137 |
+| Muhammad Dzaki Arta            | 13522149 |
+| Muhammad Rasheed Qais Tandjung | 13522158 |
